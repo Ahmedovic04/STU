@@ -18,12 +18,13 @@ if ($action === 'login') {
     $user = $stmt->fetch();
 
     $isValid = false;
-if (str_starts_with($user['password'], 'PLAIN:')) {
-    $isValid = ($password === substr($user['password'], 6));
-} else {
-    $isValid = password_verify($password, $user['password']);
-}
-if (!$user || !$isValid) {
+    if ($user && str_starts_with($user['password'], 'PLAIN:')) {
+        $isValid = ($password === substr($user['password'], 6));
+    } else if ($user) {
+        $isValid = password_verify($password, $user['password']);
+    }
+
+    if (!$user || !$isValid) {
         jsonResponse(false, 'اسم المستخدم أو كلمة المرور غير صحيحة');
     }
 
@@ -32,7 +33,11 @@ if (!$user || !$isValid) {
     $_SESSION['full_name'] = $user['full_name'];
     $_SESSION['role']      = $user['role'];
 
-    $redirect = ($user['role'] === 'admin') ? SITE_URL . '/admin/index.php' : SITE_URL . '/management/index.php';
+    // ✅ الحل هنا (روابط نسبية بدون SITE_URL)
+    $redirect = ($user['role'] === 'admin') 
+        ? '/admin/index.php' 
+        : '/management/index.php';
+
     jsonResponse(true, 'تم تسجيل الدخول بنجاح', ['redirect' => $redirect]);
 }
 
