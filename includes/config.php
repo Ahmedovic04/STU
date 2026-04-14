@@ -2,14 +2,15 @@
 // =============================================
 // Database Configuration
 // =============================================
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'school_dismissal');
-define('DB_USER', 'root');      // Change to your DB username
-define('DB_PASS', '');          // Change to your DB password
+define('DB_HOST', getenv('MYSQLHOST') ?: 'localhost');
+define('DB_NAME', getenv('MYSQL_DATABASE') ?: 'railway');
+define('DB_USER', getenv('MYSQLUSER') ?: 'root');
+define('DB_PASS', getenv('MYSQL_ROOT_PASSWORD') ?: '');
 define('DB_CHARSET', 'utf8mb4');
+define('DB_PORT', getenv('MYSQLPORT') ?: '3306');
 
 define('SITE_NAME', 'نظام استدعاء الطلاب');
-define('SITE_URL', 'http://localhost/school-dismissal');
+define('SITE_URL', getenv('RAILWAY_PUBLIC_DOMAIN') ? 'https://'.getenv('RAILWAY_PUBLIC_DOMAIN') : 'http://localhost/school-dismissal');
 
 // =============================================
 // Database Connection (PDO)
@@ -17,7 +18,7 @@ define('SITE_URL', 'http://localhost/school-dismissal');
 function getDB() {
     static $pdo = null;
     if ($pdo === null) {
-        $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
+        $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
         $options = [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
