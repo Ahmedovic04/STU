@@ -3,9 +3,9 @@
 // Database Configuration
 // =============================================
 define('DB_HOST', getenv('MYSQLHOST') ?: 'localhost');
-define('DB_NAME', getenv('MYSQL_DATABASE') ?: 'railway');
+define('DB_NAME', getenv('MYSQLDATABASE') ?: 'railway');
 define('DB_USER', getenv('MYSQLUSER') ?: 'root');
-define('DB_PASS', getenv('MYSQL_ROOT_PASSWORD') ?: '');
+define('DB_PASS', getenv('MYSQLPASSWORD') ?: '');
 define('DB_CHARSET', 'utf8mb4');
 define('DB_PORT', getenv('MYSQLPORT') ?: '3306');
 
