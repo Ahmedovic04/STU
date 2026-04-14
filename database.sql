@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS dismissal_calls (
 INSERT INTO users (username, password, full_name, role) VALUES
 ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'مدير النظام', 'admin'),
 ('mgmt1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'أحمد العلي', 'management'),
-('mgmt2', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'فاطمة المطيري', 'management');
+('mgmt22', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'فاطمة المطيري', 'management');
 
 -- Sample classes
 INSERT INTO classes (name, grade) VALUES
