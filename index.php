@@ -455,7 +455,7 @@ async function doLogin(e) {
     const data = await res.json();
 
     if (data.success) {
-      window.location.href = data.redirect;
+      window.location.href = data.data?.redirect || '/';
     } else {
       alert.textContent = data.message || 'بيانات غير صحيحة';
       alert.classList.add('show');
