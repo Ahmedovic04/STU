@@ -17,7 +17,13 @@ if ($action === 'login') {
     $stmt->execute([$username]);
     $user = $stmt->fetch();
 
-    if (!$user || !password_verify($password, $user['password'])) {
+    $isValid = false;
+if (str_starts_with($user['password'], 'PLAIN:')) {
+    $isValid = ($password === substr($user['password'], 6));
+} else {
+    $isValid = password_verify($password, $user['password']);
+}
+if (!$user || !$isValid) {
         jsonResponse(false, 'اسم المستخدم أو كلمة المرور غير صحيحة');
     }
 
