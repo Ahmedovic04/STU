@@ -486,10 +486,14 @@ async function loadClasses() {
   ]);
 
   // Count calls per class
-  classCallCounts = {};
-  (lr.data || []).forEach(d => {
-    // We'd need class_id, but we have class_name — skip for now
-  });
+  if (!lr.success || !Array.isArray(lr.data)) {
+  console.error('API Error:', lr.message);
+  return;
+}
+
+lr.data.forEach(item => {
+  // كودك الحالي
+});
 
   const selector = document.getElementById('classSelector');
   const classes  = cr.data || [];
