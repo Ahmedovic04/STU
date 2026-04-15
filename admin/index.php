@@ -547,7 +547,7 @@ async function loadLog() {
   function resetCalls() {
     if (!confirm('هل أنت متأكد من تصفير الاستدعاءات؟')) return;
 
-    fetch('api.php?action=reset_calls')
+    fetch('data.php?action=reset_calls')
     .then(res => res.json())
     .then(data => {
         alert(data.message);
