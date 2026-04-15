@@ -144,6 +144,7 @@ if ($action === 'update_student') {
 if ($action === 'call_student') {
     if (!requireLogin('management')) {
         jsonResponse(false, 'غير مسجل دخول');
+    }
 
     $studentId = intval($_POST['student_id'] ?? 0);
     $user = currentUser();
