@@ -124,7 +124,7 @@ function setLoading(btn, loading) {
 // Shared utilities - school dismissal system
 // ============================================
 
-const API_BASE = window.location.origin + '/api/data.php';
+const API_BASE = '/api/data.php';
 
 // ---- API helper (GET) ----
 async function apiGet(action, params = {}) {
