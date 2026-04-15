@@ -147,23 +147,18 @@ async function apiGet(action, params = {}) {
 }
 
 // ---- API helper (POST) ----
-async function apiGet(action, params = {}) {
-  let url = `${API_BASE}?action=${action}`;
-
-  for (const k in params) {
-    url += `&${k}=${encodeURIComponent(params[k])}`;
+async function api(action, method = 'GET', body = null) {
+  const url = `${API_BASE}?action=${action}`;
+  const opts = { method };
+  if (body) {
+    opts.body = body instanceof FormData ? body : new URLSearchParams(body);
   }
-
-  const res = await fetch(url, {
-    method: 'GET',
-    credentials: 'include',
-    cache: 'no-store',
-    headers: {
-      'Cache-Control': 'no-cache'
-    }
-  });
-
-  return await res.json();
+  try {
+    const res = await fetch(url, opts);
+    return await res.json();
+  } catch (e) {
+    return { success: false, message: 'خطأ في الاتصال بالخادم' };
+  }
 }
 
 // ---- Toast ----
