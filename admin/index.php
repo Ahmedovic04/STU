@@ -648,6 +648,20 @@ async function bulkImport() {
 
 // Init
 loadDashboard();
+  async function resetCalls() {
+  const ok = confirm("هل أنت متأكد من تصفير جميع الاستدعاءات؟");
+  if (!ok) return;
+
+  const r = await api('reset_calls', 'POST', new FormData());
+
+  if (r.success) {
+    alert("تم تصفير الاستدعاءات بنجاح");
+    loadDashboard?.();
+    loadLog?.();
+  } else {
+    alert(r.message || "حدث خطأ");
+  }
+}
 </script>
 </body>
 </html>
