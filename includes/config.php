@@ -44,21 +44,21 @@ function startSecureSession() {
 
 function requireLogin($role = null) {
     startSecureSession();
+
     if (!isset($_SESSION['user_id'])) {
-        header('Location: ' . SITE_URL . '/index.php');
-        exit;
+        jsonResponse(false, 'غير مسجل دخول', ['auth' => false]);
     }
+
     if ($role && $_SESSION['role'] !== $role && $_SESSION['role'] !== 'admin') {
-        header('Location: ' . SITE_URL . '/index.php?error=unauthorized');
-        exit;
+        jsonResponse(false, 'غير مصرح', ['auth' => false]);
     }
 }
 
 function requireAdmin() {
     startSecureSession();
+
     if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-        header('Location: ' . SITE_URL . '/index.php?error=unauthorized');
-        exit;
+        jsonResponse(false, 'غير مصرح', ['auth' => false]);
     }
 }
 
