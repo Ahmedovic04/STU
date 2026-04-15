@@ -2,8 +2,7 @@
 // Shared utilities - school dismissal system
 // ============================================
 
-const API_BASE = window.location.origin + '/school-dismissal/api/data.php';
-
+const API_BASE = window.location.origin + '/api/data.php';
 // ---- API helper ----
 async function api(action, method = 'GET', body = null) {
   const url = `${API_BASE}?action=${action}`;
