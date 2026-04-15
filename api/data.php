@@ -319,6 +319,51 @@ if ($action === 'bulk_import_students') {
         'skipped'  => $skipped
     ]);
 }
+/* ================= EXTRA FEATURES ================= */
+
+// ===== LOGOUT =====
+if ($action === 'logout') {
+    logout();
+}
+
+// ===== RESET CALLS =====
+if ($action === 'reset_calls') {
+    requireAdmin();
+
+    $stmt = $db->prepare("DELETE FROM dismissal_calls");
+    $stmt->execute();
+
+    jsonResponse(true, 'تم تصفير جميع الاستدعاءات');
+}
+
+// ===== REPORT =====
+if ($action === 'report') {
+    requireAdmin();
+
+    $from = $_GET['from'] ?? '';
+    $to   = $_GET['to'] ?? '';
+
+    if (!$from || !$to) {
+        jsonResponse(false, 'حدد التاريخ');
+    }
+
+    $stmt = $db->prepare("
+        SELECT dc.call_date, dc.call_time,
+               s.full_name AS student_name,
+               c.name AS class_name,
+               u.full_name AS called_by
+        FROM dismissal_calls dc
+        JOIN students s ON s.id = dc.student_id
+        JOIN classes c ON c.id = s.class_id
+        JOIN users u ON u.id = dc.called_by
+        WHERE dc.call_date BETWEEN ? AND ?
+        ORDER BY dc.call_date DESC, dc.call_time DESC
+    ");
+
+    $stmt->execute([$from, $to]);
+
+    jsonResponse(true, '', $stmt->fetchAll());
+}
 
 /* ================= DEFAULT ================= */
 
