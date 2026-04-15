@@ -449,7 +449,7 @@ body {
 </div>
 
 <script>
-const API = (window.location.origin + '/school-dismissal/api/data.php');
+const API = window.location.origin + '/api/data.php';
 
 async function apiGet(action, params = {}) {
   let url = `${API}?action=${action}`;
