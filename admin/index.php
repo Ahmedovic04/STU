@@ -544,6 +544,16 @@ async function loadLog() {
     body.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><h3>لا توجد استدعاءات اليوم</h3><p>ستظهر هنا عند استدعاء الطلاب</p></div>';
     return;
   }
+  function resetCalls() {
+    if (!confirm('هل أنت متأكد من تصفير الاستدعاءات؟')) return;
+
+    fetch('api.php?action=reset_calls')
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+        location.reload();
+    });
+}
   body.innerHTML = `<div class="table-wrap"><table>
     <thead><tr><th>الوقت</th><th>الطالب</th><th>الصف</th><th>بواسطة</th></tr></thead>
     <tbody>${r.data.map(d => `
