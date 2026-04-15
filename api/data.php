@@ -365,7 +365,11 @@ if ($action === 'report') {
 
     jsonResponse(true, '', $stmt->fetchAll());
 }
-
+if ($action === 'reset_calls') {
+    requireAdmin();
+    $db->exec("DELETE FROM dismissal_calls");
+    jsonResponse(true, 'تم التصفير');
+}
 /* ================= DEFAULT ================= */
 
 jsonResponse(false, 'طلب غير معروف');
