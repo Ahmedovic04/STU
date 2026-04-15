@@ -171,10 +171,10 @@ include '../includes/header.php';
     <!-- ===== LOG ===== -->
     <div id="section-log" style="display:none">
       <div class="card">
-        <div class="card-header">
+        <div class="card-header" style="display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-bottom:15px">
           <h2>📋 سجل استدعاءات اليوم</h2>
           <button class="btn btn-ghost btn-sm" onclick="loadLog()">🔄 تحديث</button>
-          <button onclick="resetCalls()">تصفير الاستدعاءات</button>
+          <button class="btn btn-danger btn-sm" onclick="resetCalls()" style="display:flex;align-items:center;gap:6px">🧹 تصفير الاستدعاءات</button>
         </div>
         <div class="card-body" id="logBody">جاري التحميل...</div>
       </div>
