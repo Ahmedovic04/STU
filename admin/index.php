@@ -174,6 +174,7 @@ include '../includes/header.php';
         <div class="card-header">
           <h2>📋 سجل استدعاءات اليوم</h2>
           <button class="btn btn-ghost btn-sm" onclick="loadLog()">🔄 تحديث</button>
+          <button onclick="resetCalls()">تصفير الاستدعاءات</button>
         </div>
         <div class="card-body" id="logBody">جاري التحميل...</div>
       </div>
