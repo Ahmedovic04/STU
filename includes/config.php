@@ -99,3 +99,31 @@ function cleanOldCalls() {
     // Calls are filtered by date in queries - no deletion needed
     // This keeps history but only shows today's calls
 }
+function autoResetCalls() {
+    $db = getDB();
+
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS settings (
+            id INT PRIMARY KEY,
+            last_reset DATETIME
+        )
+    ");
+
+    $stmt = $db->query("SELECT last_reset FROM settings WHERE id = 1");
+    $row = $stmt->fetch();
+
+    $now = new DateTime();
+
+    if (!$row) {
+        $db->prepare("INSERT INTO settings (id, last_reset) VALUES (1, NOW())")->execute();
+        return;
+    }
+
+    $last = new DateTime($row['last_reset']);
+    $diff = $now->getTimestamp() - $last->getTimestamp();
+
+    if ($diff >= 18000) { // 5 ساعات
+        $db->exec("DELETE FROM dismissal_calls");
+        $db->prepare("UPDATE settings SET last_reset = NOW() WHERE id = 1")->execute();
+    }
+}
