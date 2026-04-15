@@ -46,12 +46,15 @@ function requireLogin($role = null) {
     startSecureSession();
 
     if (!isset($_SESSION['user_id'])) {
-        jsonResponse(false, 'غير مسجل دخول', ['auth' => false]);
+        // بدل ما نوقف النظام، نرجع null session
+        return false;
     }
 
     if ($role && $_SESSION['role'] !== $role && $_SESSION['role'] !== 'admin') {
-        jsonResponse(false, 'غير مصرح', ['auth' => false]);
+        return false;
     }
+
+    return true;
 }
 
 function requireAdmin() {
