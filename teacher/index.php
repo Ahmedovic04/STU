@@ -627,7 +627,13 @@ async function refreshClassCounts() {
 }
 
 // Init
+  // add now1
 loadClasses();
+  window.addEventListener('focus', () => {
+  loadClasses();
+  loadStudents();
+    //
+});
 </script>
 </body>
 </html>
