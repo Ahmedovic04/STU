@@ -290,7 +290,7 @@ if ($action === 'bulk_import_students') {
     if (!$classId || empty($names))
         jsonResponse(false, 'الصف والأسماء مطلوبة');
 
-    $lines = preg_split('/[\r\n،,]+/', $names);
+    $lines = preg_split('/[\r\n،,]+/u', $names);
 
     $inserted = 0;
     $skipped = 0;
@@ -301,7 +301,7 @@ if ($action === 'bulk_import_students') {
     ");
 
     foreach ($lines as $line) {
-        $name = preg_replace('/^[\d٠-٩]+[\.\-\)\s]+/', '', trim($line));
+        $name = preg_replace('/^[\d٠-٩]+[\.\-\)\s]+/u', '', trim($line));
         $name = trim($name);
 
         if (empty($name) || mb_strlen($name) < 2) {
