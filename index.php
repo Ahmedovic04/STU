@@ -1,3 +1,12 @@
+<?php
+require_once 'includes/config.php';
+startSecureSession();
+if (isLoggedIn()) {
+    $u = currentUser();
+    header('Location: ' . ($u['role'] === 'admin' ? 'admin/index.php' : 'management/index.php'));
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -408,19 +417,7 @@
   </div>
 </div>
 
-<?php
-require_once 'includes/config.php';
-startSecureSession();
-if (isLoggedIn()) {
-    $u = currentUser();
-    if ($u['role'] === 'admin') {
-        header('Location: admin/index.php');
-    } else {
-        header('Location: management/index.php');
-    }
-    exit;
-}
-?>
+
 
 <script>
 function switchTab(tab) {
