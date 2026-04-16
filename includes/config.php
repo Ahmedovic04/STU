@@ -12,7 +12,12 @@ define('DB_CHARSET', 'utf8mb4');
 define('DB_PORT', getenv('MYSQLPORT') ?: '3306');
 
 define('SITE_NAME', 'نظام استدعاء الطلاب');
-define('SITE_URL', getenv('RAILWAY_PUBLIC_DOMAIN') ? 'https://'.getenv('RAILWAY_PUBLIC_DOMAIN') : 'http://localhost/school-dismissal');
+
+// Dynamically detect SITE_URL — works behind Coolify/Railway/any reverse proxy
+$_proto = (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) ? $_SERVER['HTTP_X_FORWARDED_PROTO'] : ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http'));
+$_host  = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost';
+define('SITE_URL', rtrim($_proto . '://' . $_host, '/'));
+define('IS_HTTPS', $_proto === 'https');
 
 // =============================================
 // Database Connection (PDO)
@@ -40,6 +45,16 @@ function getDB() {
 // =============================================
 function startSecureSession() {
     if (session_status() === PHP_SESSION_NONE) {
+        // Support HTTPS behind reverse proxy (Coolify/Railway/Traefik)
+        $isHttps = (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+                   || (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+        session_set_cookie_params([
+            'lifetime' => 0,
+            'path'     => '/',
+            'secure'   => $isHttps,
+            'httponly' => true,
+            'samesite' => $isHttps ? 'None' : 'Lax',
+        ]);
         session_start();
     }
 }
