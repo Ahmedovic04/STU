@@ -8,6 +8,11 @@ services:
       - MYSQLDATABASE=school_dismissal
       - MYSQLUSER=root
       - MYSQLPASSWORD=root
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     depends_on:
       - db
 
@@ -19,6 +24,11 @@ services:
     volumes:
       - ./database.sql:/docker-entrypoint-initdb.d/init.sql
       - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   db_data:
