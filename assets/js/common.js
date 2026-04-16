@@ -6,7 +6,7 @@ const API_BASE = window.location.origin + '/api/data.php';
 // ---- API helper ----
 async function api(action, method = 'GET', body = null) {
   const url = `${API_BASE}?action=${action}`;
-  const opts = { method };
+  const opts = { method, credentials: 'include' };
   if (body) {
     opts.body = body instanceof FormData ? body : new URLSearchParams(body);
   }
@@ -149,7 +149,7 @@ async function apiGet(action, params = {}) {
 // ---- API helper (POST) ----
 async function api(action, method = 'GET', body = null) {
   const url = `${API_BASE}?action=${action}`;
-  const opts = { method };
+  const opts = { method, credentials: 'include' };
   if (body) {
     opts.body = body instanceof FormData ? body : new URLSearchParams(body);
   }
