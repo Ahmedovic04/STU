@@ -380,7 +380,30 @@ include '../includes/header.php';
         height: 80px;
         background: white;
         padding: 4px;
-        border: 1px sol<script>
+        border: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .id-card-footer {
+        background: #f8fafc;
+        padding: 4px;
+        text-align: center;
+        font-size: 8pt;
+        color: #94a3b8;
+        border-top: 1px solid #e2e8f0;
+    }
+</style>
+
+<!-- Hidden Container for PDF Generation -->
+<div id="print-area" style="position: absolute; top: 0; left: 0; width: 210mm; z-index: -1000; opacity: 0; background: white; overflow: visible;"></div>
+
+<script src="../assets/js/common.js"></script>
+<script src="../assets/js/qrcode.min.js"></script>
+<script src="../assets/js/html2pdf.bundle.min.js"></script>
+
+<script>
 let allClasses = [];
 let allStudents = [];
 const SITE_BASE = window.location.origin;
