@@ -131,12 +131,14 @@ include '../includes/header.php';
           <h2>👨‍🎓 إدارة الطلاب</h2>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-ghost" onclick="openBulkImport()">📋 استيراد قائمة</button>
+            <button class="btn btn-ghost" id="btnDownloadClassCards" onclick="downloadClassCards()" style="display:none">🖨️ طباعة بطاقات الصف</button>
+            <button class="btn btn-ghost" onclick="downloadAllCards()">📄 تحميل جميع البطاقات PDF</button>
             <button class="btn btn-accent" onclick="openModal('modalAddStudent')">+ إضافة طالب</button>
           </div>
         </div>
         <div class="card-body">
           <div class="form-group" style="max-width:280px">
-            <select class="form-control" id="filterClass" onchange="loadStudentsAdmin()">
+            <select class="form-control" id="filterClass" onchange="onFilterClassChange()">
               <option value="">— جميع الصفوف —</option>
             </select>
           </div>
@@ -320,6 +322,10 @@ include '../includes/header.php';
 <div id="toast-container"></div>
 
 <script src="../assets/js/common.js"></script>
+<!-- QR Code Generator -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- PDF Generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
 let allClasses = [];
 
@@ -440,6 +446,10 @@ async function loadStudentsAdmin() {
   const classId = document.getElementById('filterClass').value;
   const r = await apiGet('get_all_students', classId ? {class_id: classId} : {});
   const tbody = document.getElementById('studentsTable');
+
+  // Cache data for PDF download
+  window._lastStudentsData = r.data || [];
+
   if (!r.data?.length) {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">لا يوجد طلاب</td></tr>';
     return;
@@ -453,6 +463,7 @@ async function loadStudentsAdmin() {
       <td style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" onclick="editStudent(${s.id},'${s.full_name.replace(/'/g,"\\'")}',${s.class_id},'${s.student_number||''}')">✏️ تعديل</button>
         <button class="btn btn-danger btn-sm" onclick="deleteStudent(${s.id},'${s.full_name.replace(/'/g,"\\'")}')">🗑️</button>
+        <button class="btn btn-ghost btn-sm" onclick="printStudentCard(${s.id})" title="طباعة البطاقة">🖨️ بطاقة</button>
       </td>
     </tr>`).join('');
 }
@@ -471,6 +482,13 @@ async function addStudent() {
     document.getElementById('studentNum').value = '';
     loadStudentsAdmin();
   } else toast(r.message, 'error');
+}
+
+function onFilterClassChange() {
+  const classId = document.getElementById('filterClass').value;
+  const btn = document.getElementById('btnDownloadClassCards');
+  if (btn) btn.style.display = classId ? 'inline-flex' : 'none';
+  loadStudentsAdmin();
 }
 
 function editStudent(id, name, classId, num) {
@@ -648,6 +666,182 @@ async function bulkImport() {
 
 // Init
 loadDashboard();
+
+/* =============================================
+   QR CARD / PDF FUNCTIONS
+============================================= */
+
+const SITE_BASE = window.location.origin;
+
+/**
+ * Generate an ID card HTML element for a student
+ */
+function buildCardHTML(student) {
+  const callUrl = `${SITE_BASE}/call.php?code=${student.barcode}`;
+  return `
+  <div class="id-card" style="
+    width: 340px; height: 215px;
+    background: linear-gradient(135deg, #0f2238 0%, #1a3a5c 60%, #0f2238 100%);
+    border-radius: 16px;
+    padding: 20px;
+    color: #fff;
+    font-family: Tajawal, Arial, sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    direction: rtl;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    flex-shrink: 0;
+  ">
+    <!-- Background decoration -->
+    <div style="position:absolute;top:-30px;left:-30px;width:120px;height:120px;border-radius:50%;background:rgba(240,165,0,0.08);pointer-events:none"></div>
+    <div style="position:absolute;bottom:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:rgba(240,165,0,0.06);pointer-events:none"></div>
+
+    <!-- Right side: Student info -->
+    <div style="flex:1;z-index:1;overflow:hidden">
+      <div style="font-size:10px;color:rgba(240,165,0,0.9);font-weight:700;letter-spacing:2px;margin-bottom:8px;text-transform:uppercase">🏫 نظام استدعاء الطلاب</div>
+      <div style="font-size:17px;font-weight:900;line-height:1.3;margin-bottom:6px;color:#fff">${student.full_name}</div>
+      <div style="display:inline-block;background:rgba(240,165,0,0.2);color:#f0a500;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid rgba(240,165,0,0.4);margin-bottom:8px">الصف: ${student.class_name}</div>
+      ${student.student_number ? `<div style="font-size:11px;color:rgba(255,255,255,0.5)">رقم الطالب: ${student.student_number}</div>` : ''}
+      <div style="position:absolute;bottom:20px;right:20px;font-size:9px;color:rgba(255,255,255,0.3)">بطاقة تعريفية</div>
+    </div>
+
+    <!-- QR Code -->
+    <div style="z-index:1;flex-shrink:0">
+      <div id="qr-${student.id}" style="
+        background:#fff;
+        padding:6px;
+        border-radius:10px;
+        width:90px;
+        height:90px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      "></div>
+      <div style="font-size:8px;color:rgba(255,255,255,0.4);text-align:center;margin-top:5px">امسح للاستدعاء</div>
+    </div>
+  </div>
+  `;
+}
+
+/**
+ * Generate QR for a specific container element
+ */
+function generateQR(elementId, url) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  el.innerHTML = '';
+  new QRCode(el, {
+    text: url,
+    width: 78,
+    height: 78,
+    colorDark: '#0f2238',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+}
+
+/**
+ * Print a single student's ID card as PDF
+ */
+async function printStudentCard(studentId) {
+  const students = window._lastStudentsData || [];
+  const student  = students.find(s => s.id == studentId);
+  if (!student || !student.barcode) {
+    toast('لا يوجد باركود لهذا الطالب. قم بتشغيل migrate_barcodes.php أولاً', 'error');
+    return;
+  }
+
+  toast('جاري إنشاء البطاقة...');
+
+  // Create hidden container
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;top:-9999px;left:-9999px;background:#f0f4f9;padding:20px';
+  container.innerHTML = buildCardHTML(student);
+  document.body.appendChild(container);
+
+  // Generate QR
+  const callUrl = `${SITE_BASE}/call.php?code=${student.barcode}`;
+  generateQR(`qr-${student.id}`, callUrl);
+
+  // Wait for QR to render
+  await new Promise(r => setTimeout(r, 600));
+
+  const cardEl = container.querySelector('.id-card');
+  const opt = {
+    margin:       [5, 5],
+    filename:     `بطاقة_${student.full_name}.pdf`,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 3, useCORS: true, logging: false },
+    jsPDF:        { unit: 'mm', format: [100, 65], orientation: 'landscape' }
+  };
+
+  await html2pdf().set(opt).from(cardEl).save();
+  document.body.removeChild(container);
+  toast('تم تحميل البطاقة بنجاح ✅');
+}
+
+/**
+ * Download PDF for cards of a specific class (or all)
+ */
+async function downloadCardsForStudents(students, filename) {
+  if (!students.length) { toast('لا يوجد طلاب', 'error'); return; }
+
+  toast('جاري إنشاء ملف PDF...');
+
+  // Build all cards in a grid
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;top:-9999px;left:-9999px;background:#f0f4f9;padding:20px;display:flex;flex-wrap:wrap;gap:20px;width:750px';
+
+  students.forEach(s => {
+    if (!s.barcode) return;
+    container.insertAdjacentHTML('beforeend', buildCardHTML(s));
+  });
+
+  document.body.appendChild(container);
+
+  // Generate all QR codes
+  students.forEach(s => {
+    if (!s.barcode) return;
+    const callUrl = `${SITE_BASE}/call.php?code=${s.barcode}`;
+    generateQR(`qr-${s.id}`, callUrl);
+  });
+
+  // Wait for all QRs to render
+  await new Promise(r => setTimeout(r, 800));
+
+  const opt = {
+    margin:       10,
+    filename:     filename,
+    image:        { type: 'jpeg', quality: 0.95 },
+    html2canvas:  { scale: 2, useCORS: true, logging: false },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+  };
+
+  await html2pdf().set(opt).from(container).save();
+  document.body.removeChild(container);
+  toast('تم تحميل بطاقات PDF بنجاح ✅');
+}
+
+async function downloadClassCards() {
+  const classId = document.getElementById('filterClass').value;
+  if (!classId) { downloadAllCards(); return; }
+
+  const r = await apiGet('get_all_students', { class_id: classId });
+  const students = r.data || [];
+  const classOpt = document.getElementById('filterClass').selectedOptions[0];
+  const className = classOpt ? classOpt.text : 'الصف';
+  await downloadCardsForStudents(students, `بطاقات_${className}.pdf`);
+}
+
+async function downloadAllCards() {
+  const r = await apiGet('get_all_students');
+  const students = r.data || [];
+  await downloadCardsForStudents(students, 'جميع_البطاقات.pdf');
+}
+
   async function resetCalls() {
   const ok = confirm("هل أنت متأكد من تصفير جميع الاستدعاءات؟");
   if (!ok) return;

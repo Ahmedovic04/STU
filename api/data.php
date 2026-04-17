@@ -100,12 +100,15 @@ if ($action === 'add_student') {
     if (empty($name) || !$classId)
         jsonResponse(false, 'الاسم والصف مطلوبان');
 
+    // Generate a unique barcode
+    $barcode = bin2hex(random_bytes(8));
+
     $stmt = $db->prepare("
-        INSERT INTO students (full_name, class_id, student_number)
-        VALUES (?,?,?)
+        INSERT INTO students (full_name, class_id, student_number, barcode)
+        VALUES (?,?,?,?)
     ");
 
-    $stmt->execute([$name, $classId, $number]);
+    $stmt->execute([$name, $classId, $number, $barcode]);
 
     jsonResponse(true, 'تم إضافة الطالب');
 }
@@ -296,8 +299,8 @@ if ($action === 'bulk_import_students') {
     $skipped = 0;
 
     $stmt = $db->prepare("
-        INSERT INTO students (full_name, class_id)
-        VALUES (?,?)
+        INSERT INTO students (full_name, class_id, barcode)
+        VALUES (?,?,?)
     ");
 
     foreach ($lines as $line) {
@@ -310,7 +313,8 @@ if ($action === 'bulk_import_students') {
         }
 
         try {
-            $stmt->execute([$name, $classId]);
+            $barcode = bin2hex(random_bytes(8));
+            $stmt->execute([$name, $classId, $barcode]);
             $inserted++;
         } catch (Exception $e) {
             $skipped++;
@@ -322,6 +326,54 @@ if ($action === 'bulk_import_students') {
         'skipped'  => $skipped
     ]);
 }
+/* ================= BARCODE PUBLIC CALL ================= */
+
+if ($action === 'call_by_barcode') {
+    $code = trim($_GET['code'] ?? $_POST['code'] ?? '');
+    if (empty($code)) jsonResponse(false, 'رمز غير صالح');
+
+    // Find student by barcode
+    $stmt = $db->prepare("
+        SELECT s.id, s.full_name, c.name as class_name
+        FROM students s
+        JOIN classes c ON c.id = s.class_id
+        WHERE s.barcode = ?
+    ");
+    $stmt->execute([$code]);
+    $student = $stmt->fetch();
+
+    if (!$student) jsonResponse(false, 'الطالب غير موجود');
+
+    // Get barcode_system user id
+    $sysUser = $db->query("SELECT id FROM users WHERE username = 'barcode_system' LIMIT 1")->fetch();
+    $callerId = $sysUser ? $sysUser['id'] : 1;
+
+    // Check if already called today
+    $check = $db->prepare("SELECT id FROM dismissal_calls WHERE student_id=? AND call_date=?");
+    $check->execute([$student['id'], $today]);
+
+    if ($check->fetch()) {
+        jsonResponse(true, 'الطالب مستدعى مسبقاً اليوم', [
+            'status'     => 'already_called',
+            'student'    => $student['full_name'],
+            'class_name' => $student['class_name']
+        ]);
+    }
+
+    $ins = $db->prepare("
+        INSERT INTO dismissal_calls (student_id, called_by, call_date, call_time)
+        VALUES (?,?,?,?)
+    ");
+    $ins->execute([$student['id'], $callerId, $today, date('H:i:s')]);
+
+    jsonResponse(true, 'تم استدعاء الطالب بنجاح', [
+        'status'     => 'called',
+        'student'    => $student['full_name'],
+        'class_name' => $student['class_name'],
+        'call_time'  => date('H:i')
+    ]);
+}
+
 /* ================= EXTRA FEATURES ================= */
 
 // ===== LOGOUT =====
