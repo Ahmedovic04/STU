@@ -623,7 +623,28 @@ function openPrintWindow(students) {
         if (i + 6 < students.length) contentHtml += '<div class="page-break"></div>';
     }
     const currentStyles = Array.from(document.querySelectorAll('style')).map(s => s.innerHTML).join('\n');
-    printWindow.document.write('<html><head><title>Print</title><style>' + currentStyles + 'body{background:white;padding:10mm;margin:0;direction:rtl;}.bulk-print-table{width:100%;border-collapse:separate;border-spacing:10mm;table-layout:fixed;}.bulk-print-table td{vertical-align:top;width:50%;padding:0;}.id-card-wrapper{margin:0 auto;box-shadow:none;border:1px solid #eee;}.page-break{page-break-after:always;height:1px;}@media print{@page{size:A4 portrait;margin:0;}body{padding:10mm;}.id-card-wrapper{border:1px solid #ddd;-webkit-print-color-adjust:exact;}}</style></head><body><div id="print-content">' + contentHtml + '</div><script src="' + SITE_BASE + '/assets/js/qrcode.min.js"></script><script>function startPrint(){const students = ' + JSON.stringify(students) + ';students.forEach(s => {const el = document.getElementById("qr-box-" + s.id);if(el) new QRCode(el, {text:"' + SITE_BASE + '/call.php?code=" + s.barcode, width:72, height:72, correctLevel:1});});setTimeout(() => { window.print(); }, 800);}window.onload = () => { if(typeof QRCode === "undefined"){ document.querySelector("script").onload = startPrint; } else { startPrint(); } };</script></body></html>');
+    
+    printWindow.document.write('<html><head><title>Print</title><style>' + currentStyles + 
+        'body{background:white;padding:10mm;margin:0;direction:rtl;}' +
+        '.bulk-print-table{width:100%;border-collapse:separate;border-spacing:10mm;table-layout:fixed;}' +
+        '.bulk-print-table td{vertical-align:top;width:50%;padding:0;}' +
+        '.id-card-wrapper{margin:0 auto;box-shadow:none;border:1px solid #eee;}' +
+        '.page-break{page-break-after:always;height:1px;}' +
+        '@media print{@page{size:A4 portrait;margin:0;}body{padding:10mm;}.id-card-wrapper{border:1px solid #ddd;-webkit-print-color-adjust:exact;}}' +
+        '</style></head><body>' +
+        '<div id="print-content">' + contentHtml + '</div>' +
+        '<script src="' + SITE_BASE + '/assets/js/qrcode.min.js"><\/script>' +
+        '<script>' +
+        'function startPrint(){' +
+        '  const students = ' + JSON.stringify(students) + ';' +
+        '  students.forEach(s => {' +
+        '    const el = document.getElementById("qr-box-" + s.id);' +
+        '    if(el) new QRCode(el, {text:"' + SITE_BASE + '/call.php?code=" + s.barcode, width:72, height:72, correctLevel:1});' +
+        '  });' +
+        '  setTimeout(() => { window.print(); }, 800);' +
+        '}' +
+        'window.onload = () => { if(typeof QRCode === "undefined"){ document.querySelectorAll("script").forEach(s => { if(s.src.includes("qrcode")) s.onload = startPrint; }); } else { startPrint(); } };' +
+        '<\/script></body></html>');
     printWindow.document.close();
 }
 
