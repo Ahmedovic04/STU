@@ -664,30 +664,7 @@ function createCardHTML(student) {
 async function printSingleCard(studentId) {
     const student = allStudents.find(s => s.id == studentId);
     if (!student) return;
-    toast('جاري تجهيز البطاقة...');
-    const printArea = document.getElementById('print-area');
-    printArea.innerHTML = `<div style="padding:10px; background:white;">${createCardHTML(student)}</div>`;
-    
-    await new Promise(r => setTimeout(r, 100));
-
-    new QRCode(printArea.querySelector(`#qr-box-${student.id}`), {
-        text: `${SITE_BASE}/call.php?code=${student.barcode}`,
-        width: 72,
-        height: 72,
-        correctLevel: QRCode.CorrectLevel.H
-    });
-
-    await new Promise(r => setTimeout(r, 800));
-
-    const opt = {
-        margin: 0,
-        filename: `بطاقة_${student.full_name}.pdf`,
-        image: { type: 'jpeg', quality: 1.0 },
-        html2canvas: { scale: 3, useCORS: true, allowTaint: true },
-        jsPDF: { unit: 'in', format: [3.37, 2.125], orientation: 'landscape' }
-    };
-
-    html2pdf().set(opt).from(printArea.firstElementChild).save().then(() => toast('تم التحميل ✅'));
+    openPrintWindow([student]);
 }
 
 async function printBulk(mode) {
@@ -698,82 +675,74 @@ async function printBulk(mode) {
         toast('لا يوجد طلاب لطباعتهم', 'error');
         return;
     }
+    openPrintWindow(students);
+}
 
-    toast('جاري تجهيز ملف PDF... يرجى عدم إغلاق الصفحة');
+function openPrintWindow(students) {
+    const printWindow = window.open('', '_blank');
+    const cardsHtml = students.map(s => createCardHTML(s)).join('');
     
-    // Force scroll to top for better capturing
-    window.scrollTo(0, 0);
-
-    const printArea = document.getElementById('print-area');
-    printArea.innerHTML = '';
-    printArea.style.opacity = '1';
-    printArea.style.zIndex = '9999';
-
-    let html = '';
+    // Build the table structure for 6 cards per page
+    let contentHtml = '';
     for (let i = 0; i < students.length; i += 6) {
         const chunk = students.slice(i, i + 6);
-        html += `<div style="width: 210mm; padding: 10mm; background: white; margin: 0 auto;">`;
-        html += `<table class="bulk-print-table">`;
+        contentHtml += `<table class="bulk-print-table">`;
         for (let j = 0; j < chunk.length; j += 2) {
-            html += `<tr>`;
-            html += `<td>${createCardHTML(chunk[j])}</td>`;
+            contentHtml += `<tr>`;
+            contentHtml += `<td>${createCardHTML(chunk[j])}</td>`;
             if (chunk[j+1]) {
-                html += `<td>${createCardHTML(chunk[j+1])}</td>`;
+                contentHtml += `<td>${createCardHTML(chunk[j+1])}</td>`;
             } else {
-                html += `<td></td>`;
+                contentHtml += `<td></td>`;
             }
-            html += `</tr>`;
+            contentHtml += `</tr>`;
         }
-        html += `</table>`;
-        html += `</div>`;
+        contentHtml += `</table>`;
         if (i + 6 < students.length) {
-            html += `<div class="page-break"></div>`;
+            contentHtml += `<div class="page-break"></div>`;
         }
     }
-    
-    printArea.innerHTML = html;
 
-    // Generate QR codes
-    students.forEach(s => {
-        const qrBox = printArea.querySelector(`#qr-box-${s.id}`);
-        if (qrBox) {
-            new QRCode(qrBox, {
-                text: `${SITE_BASE}/call.php?code=${s.barcode}`,
-                width: 72,
-                height: 72,
-                correctLevel: QRCode.CorrectLevel.M
-            });
-        }
-    });
-
-    // Wait for QRs and fonts
-    await new Promise(r => setTimeout(r, 4000));
-
-    const opt = {
-        margin: 0,
-        filename: mode === 'class' ? 'بطاقات_الصف.pdf' : 'جميع_البطاقات.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-            scale: 2, 
-            useCORS: true,
-            logging: false,
-            scrollY: 0,
-            windowWidth: 1200
-        },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-    };
-
-    try {
-        await html2pdf().set(opt).from(printArea).save();
-        toast('تم التحميل بنجاح ✅');
-    } catch (err) {
-        console.error('PDF Final Error:', err);
-        toast('خطأ في توليد الملف', 'error');
-    } finally {
-        printArea.style.opacity = '0';
-        printArea.style.zIndex = '-1000';
-        printArea.innerHTML = '';
-    }
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>طباعة البطاقات</title>
+            <style>
+                ${document.querySelector('style').innerHTML}
+                body { background: white; padding: 0; margin: 0; direction: rtl; }
+                .bulk-print-table { width: 100%; border-collapse: separate; border-spacing: 15mm; }
+                .bulk-print-table td { vertical-align: top; width: 3.37in; }
+                .page-break { page-break-after: always; }
+                @media print {
+                    @page { size: A4 portrait; margin: 10mm; }
+                    body { margin: 0; }
+                }
+            </style>
+            <script src="${SITE_BASE}/assets/js/qrcode.min.js"></script>
+        </head>
+        <body>
+            <div id="print-content">${contentHtml}</div>
+            <script>
+                window.onload = function() {
+                    const students = ${JSON.stringify(students)};
+                    students.forEach(s => {
+                        new QRCode(document.getElementById('qr-box-' + s.id), {
+                            text: '${SITE_BASE}/call.php?code=' + s.barcode,
+                            width: 72,
+                            height: 72,
+                            correctLevel: 1
+                        });
+                    });
+                    setTimeout(() => {
+                        window.print();
+                        // window.close(); // Optional
+                    }, 1000);
+                };
+            </script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
 }
 
 window.downloadClassCards = () => printBulk('class');
