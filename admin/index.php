@@ -296,9 +296,6 @@ include '../includes/header.php';
     </div>
   </div>
 </div>
-
-<!-- Add User Modal -->
-<div class="modal-overlay" id="modalAddUser">
   <div class="modal">
     <div class="modal-header"><h3>إضافة مستخدم</h3><button class="modal-close" onclick="closeModal('modalAddUser')">✕</button></div>
     <div class="modal-body">
@@ -321,46 +318,304 @@ include '../includes/header.php';
 
 <div id="toast-container"></div>
 
+<style>
+    /* ID Card Styling - Standard CR80 Size: 3.37" x 2.125" */
+    .id-card-wrapper {
+        width: 3.37in;
+        height: 2.125in;
+        background: white;
+        border-radius: 8px;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        direction: rtl;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        border: 1px solid #ddd;
+        margin: 0 auto;
+        color: #000;
+        box-sizing: border-box;
+    }
+    .id-card-header {
+        background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+        color: white;
+        padding: 6px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 11pt;
+        border-bottom: 2px solid #fbbf24;
+    }
+    .id-card-body {
+        flex: 1;
+        display: flex;
+        padding: 8px 12px;
+        align-items: center;
+        gap: 12px;
+    }
+    .id-card-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        overflow: hidden;
+    }
+    .student-field {
+        margin-bottom: 4px;
+    }
+    .student-label {
+        font-size: 8pt;
+        color: #64748b;
+        display: block;
+    }
+    .student-value {
+        font-size: 11pt;
+        font-weight: 800;
+        color: #1e293b;
+        display: block;
+        white-space: nowrap;
+    }
+    .id-card-qr-box {
+        width: 80px;
+        height: 80px;
+        background: white;
+        padding: 4px;
+        border: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .id-card-footer {
+        background: #f8fafc;
+        padding: 4px;
+        text-align: center;
+        font-size: 8pt;
+        color: #94a3b8;
+        border-top: 1px solid #e2e8f0;
+    }
+    
+    /* Print Layout for Bulk (6 per A4) */
+    .bulk-print-page {
+        display: grid;
+        grid-template-columns: repeat(2, 3.37in);
+        grid-template-rows: repeat(3, 2.125in);
+        gap: 0.3in;
+        padding: 0.5in;
+        width: 210mm; /* A4 */
+        height: 297mm; /* A4 */
+        box-sizing: border-box;
+        margin: 0 auto;
+        background: white;
+        justify-content: center;
+        align-content: start;
+    }
+    .page-break {
+        page-break-after: always;
+    }
+</style>
+
+<!-- Hidden Container for PDF Generation -->
+<div id="print-area" style="position: absolute; left: -9999px; top: -9999px;"></div>
+
 <script src="../assets/js/common.js"></script>
-<!-- QR Code Generator (local) -->
 <script src="../assets/js/qrcode.min.js"></script>
-<!-- PDF Generation (local) -->
 <script src="../assets/js/html2pdf.bundle.min.js"></script>
+
 <script>
 let allClasses = [];
+let allStudents = [];
+const SITE_BASE = window.location.origin;
 
+// Set current date
 document.getElementById('todayDate').textContent = arabicDate();
 
-// ---- Section switching ----
-const sectionTitles = {
-  dashboard: 'لوحة التحكم',
-  classes:   'إدارة الصفوف',
-  students:  'إدارة الطلاب',
-  users:     'إدارة المستخدمين',
-  log:       'سجل الاستدعاءات'
-};
-
-function showSection(name) {
-  document.querySelectorAll('[id^="section-"]').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  document.getElementById('section-' + name).style.display = 'block';
-  document.getElementById('sectionTitle').textContent = sectionTitles[name];
-  const navItems = document.querySelectorAll('.nav-item');
-  navItems.forEach(item => {
-    if (item.getAttribute('onclick')?.includes(name)) item.classList.add('active');
-  });
-  // Close mobile sidebar
-  document.querySelector('.sidebar').classList.remove('open');
-  document.querySelector('.sidebar-overlay').classList.remove('open');
-
-  if (name === 'dashboard') loadDashboard();
-  if (name === 'classes')   loadClasses();
-  if (name === 'students')  { loadClassesIntoSelect(); loadStudentsAdmin(); }
-  if (name === 'users')     loadUsers();
-  if (name === 'log')       loadLog();
+async function initPage() {
+    await loadInitialData();
 }
 
-// ---- DASHBOARD ----
+async function loadInitialData() {
+    try {
+        const classesRes = await apiGet('get_classes');
+        allClasses = classesRes.data || [];
+        
+        const studentsRes = await apiGet('get_all_students');
+        allStudents = studentsRes.data || [];
+        
+        renderFilters();
+        loadStudentsAdmin();
+        loadDashboard();
+    } catch (e) {
+        console.error("Init Error:", e);
+    }
+}
+
+function renderFilters() {
+    const filters = ['filterClass', 'studentClass', 'editStudentClass', 'bulkClassId'];
+    const options = allClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    
+    filters.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            const firstOpt = id === 'filterClass' ? '<option value="">— جميع الصفوف —</option>' : '<option value="">اختر الصف</option>';
+            el.innerHTML = firstOpt + options;
+        }
+    });
+}
+
+function loadStudentsAdmin() {
+    const classId = document.getElementById('filterClass').value;
+    const tbody = document.getElementById('studentsTable');
+    tbody.innerHTML = '';
+    
+    const filtered = classId ? allStudents.filter(s => s.class_id == classId) : allStudents;
+    
+    // Toggle bulk class button
+    const btnBulkClass = document.getElementById('btnDownloadClassCards');
+    if (btnBulkClass) {
+        btnBulkClass.style.display = classId ? 'inline-flex' : 'none';
+    }
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px">لا يوجد طلاب</td></tr>';
+        return;
+    }
+
+    filtered.forEach((s, i) => {
+        tbody.innerHTML += `
+            <tr>
+                <td style="color:var(--text-muted)">${i+1}</td>
+                <td style="font-weight:700">${s.full_name}</td>
+                <td>${s.student_number || '—'}</td>
+                <td><span class="badge badge-admin">${s.class_name}</span></td>
+                <td style="display:flex;gap:6px">
+                    <button class="btn btn-ghost btn-sm" onclick="printSingleCard(${s.id})" title="طباعة البطاقة">🖨️ بطاقة</button>
+                    <button class="btn btn-ghost btn-sm" onclick="editStudent(${s.id},'${s.full_name.replace(/'/g,"\\'")}',${s.class_id},'${s.student_number||''}')">✏️</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteStudent(${s.id},'${s.full_name}')">🗑️</button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+function onFilterClassChange() {
+    loadStudentsAdmin();
+}
+
+function createCardHTML(student) {
+    return `
+        <div class="id-card-wrapper">
+            <div class="id-card-header">بطاقة تعريف الطالب</div>
+            <div class="id-card-body">
+                <div class="id-card-info">
+                    <div class="student-field">
+                        <span class="student-label">اسم الطالب:</span>
+                        <span class="student-value">${student.full_name}</span>
+                    </div>
+                    <div class="student-field">
+                        <span class="student-label">الصف:</span>
+                        <span class="student-value">${student.class_name}</span>
+                    </div>
+                    ${student.student_number ? `
+                    <div class="student-field">
+                        <span class="student-label">الرقم:</span>
+                        <span class="student-value">${student.student_number}</span>
+                    </div>` : ''}
+                </div>
+                <div class="id-card-qr-box" id="qr-box-${student.id}"></div>
+            </div>
+            <div class="id-card-footer">${SITE_NAME} - الاستدعاء الذكي</div>
+        </div>
+    `;
+}
+
+async function printSingleCard(studentId) {
+    const student = allStudents.find(s => s.id == studentId);
+    if (!student) return;
+
+    toast('جاري تجهيز البطاقة...');
+    const printArea = document.getElementById('print-area');
+    printArea.innerHTML = `<div style="padding:10px; background:white;">${createCardHTML(student)}</div>`;
+    
+    await new Promise(r => setTimeout(r, 100));
+
+    new QRCode(document.getElementById(`qr-box-${student.id}`), {
+        text: `${SITE_BASE}/call.php?code=${student.barcode}`,
+        width: 72,
+        height: 72,
+        correctLevel: QRCode.CorrectLevel.H
+    });
+
+    await new Promise(r => setTimeout(r, 500));
+
+    const opt = {
+        margin: 0,
+        filename: `بطاقة_${student.full_name}.pdf`,
+        image: { type: 'jpeg', quality: 1.0 },
+        html2canvas: { scale: 3, useCORS: true },
+        jsPDF: { unit: 'in', format: [3.37, 2.125], orientation: 'landscape' }
+    };
+
+    html2pdf().set(opt).from(printArea.firstElementChild).save().then(() => {
+        toast('تم التحميل ✅');
+    });
+}
+
+async function printBulk(mode) {
+    const classId = document.getElementById('filterClass').value;
+    const students = mode === 'class' ? allStudents.filter(s => s.class_id == classId) : allStudents;
+    
+    if (students.length === 0) {
+        toast('لا يوجد طلاب لطباعتهم', 'error');
+        return;
+    }
+
+    toast('جاري معالجة البطاقات... يرجى الانتظار');
+    const printArea = document.getElementById('print-area');
+    printArea.innerHTML = '';
+    
+    // Pages of 6
+    for (let i = 0; i < students.length; i += 6) {
+        const page = document.createElement('div');
+        page.className = 'bulk-print-page' + (i + 6 < students.length ? ' page-break' : '');
+        
+        const chunk = students.slice(i, i + 6);
+        chunk.forEach(s => {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = createCardHTML(s);
+            page.appendChild(wrapper);
+        });
+        
+        printArea.appendChild(page);
+        
+        // QRs
+        chunk.forEach(s => {
+            new QRCode(document.getElementById(`qr-box-${s.id}`), {
+                text: `${SITE_BASE}/call.php?code=${s.barcode}`,
+                width: 72,
+                height: 72
+            });
+        });
+    }
+
+    await new Promise(r => setTimeout(r, 1200));
+
+    const opt = {
+        margin: 0,
+        filename: mode === 'class' ? 'بطاقات_الصف.pdf' : 'جميع_البطاقات.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(printArea).save().then(() => {
+        toast('تم تحميل جميع البطاقات بنجاح ✅');
+    });
+}
+
+window.downloadClassCards = () => printBulk('class');
+window.downloadAllCards = () => printBulk('all');
+
+// --- Standard API Functions ---
 async function loadDashboard() {
   const r = await apiGet('get_today_log');
   const body = document.getElementById('dashLogBody');
@@ -381,481 +636,35 @@ async function loadDashboard() {
   </table></div>`;
 }
 
-// ---- CLASSES ----
-async function loadClasses() {
-  const r = await apiGet('get_classes');
-  allClasses = r.data || [];
-  const tbody = document.getElementById('classesTable');
-  if (!allClasses.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-state" style="padding:40px">لا توجد صفوف</td></tr>';
-    return;
-  }
-  // Get student counts
-  const db2 = await apiGet('get_all_students');
-  const countMap = {};
-  (db2.data || []).forEach(s => { countMap[s.class_id] = (countMap[s.class_id] || 0) + 1; });
-
-  tbody.innerHTML = allClasses.map((c, i) => `
-    <tr>
-      <td style="color:var(--text-muted)">${i+1}</td>
-      <td style="font-weight:700;font-size:16px">${c.name}</td>
-      <td>${c.grade || '—'}</td>
-      <td><span class="badge badge-admin">${countMap[c.id] || 0} طالب</span></td>
-      <td style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" onclick="openRenameClass(${c.id},'${c.name.replace(/'/g,"\\'")}','${(c.grade||'').replace(/'/g,"\\'")}')">✏️ تعديل</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteClass(${c.id},'${c.name}')">🗑️ حذف</button>
-      </td>
-    </tr>`).join('');
-}
-
-async function addClass() {
-  const name = document.getElementById('className').value.trim();
-  const grade = document.getElementById('classGrade').value.trim();
-  if (!name) { toast('اسم الصف مطلوب', 'error'); return; }
-  const fd = new FormData();
-  fd.append('name', name); fd.append('grade', grade);
-  const r = await api('add_class', 'POST', fd);
-  if (r.success) {
-    toast(r.message);
-    closeModal('modalAddClass');
-    document.getElementById('className').value = '';
-    document.getElementById('classGrade').value = '';
-    loadClasses();
-  } else toast(r.message, 'error');
-}
-
-async function deleteClass(id, name) {
-  const ok = await confirmDialog(`هل أنت متأكد من حذف الصف <strong>${name}</strong>؟<br>سيتم حذف جميع الطلاب المرتبطين به.`);
-  if (!ok) return;
-  const fd = new FormData(); fd.append('id', id);
-  const r = await api('delete_class', 'POST', fd);
-  if (r.success) { toast(r.message); loadClasses(); } else toast(r.message, 'error');
-}
-
-// ---- STUDENTS ----
-async function loadClassesIntoSelect() {
-  const r = await apiGet('get_classes');
-  allClasses = r.data || [];
-  const opts = allClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-  document.getElementById('filterClass').innerHTML = '<option value="">— جميع الصفوف —</option>' + opts;
-  document.getElementById('studentClass').innerHTML = '<option value="">اختر الصف</option>' + opts;
-  document.getElementById('editStudentClass').innerHTML = '<option value="">اختر الصف</option>' + opts;
-}
-
-async function loadStudentsAdmin() {
-  const classId = document.getElementById('filterClass').value;
-  const r = await apiGet('get_all_students', classId ? {class_id: classId} : {});
-  const tbody = document.getElementById('studentsTable');
-
-  // Cache data for PDF download
-  window._lastStudentsData = r.data || [];
-
-  if (!r.data?.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">لا يوجد طلاب</td></tr>';
-    return;
-  }
-  tbody.innerHTML = r.data.map((s, i) => `
-    <tr>
-      <td style="color:var(--text-muted)">${i+1}</td>
-      <td style="font-weight:700">${s.full_name}</td>
-      <td>${s.student_number || '—'}</td>
-      <td><span class="badge badge-admin">${s.class_name}</span></td>
-      <td style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" onclick="editStudent(${s.id},'${s.full_name.replace(/'/g,"\\'")}',${s.class_id},'${s.student_number||''}')">✏️ تعديل</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteStudent(${s.id},'${s.full_name.replace(/'/g,"\\'")}')">🗑️</button>
-        <button class="btn btn-ghost btn-sm" onclick="printStudentCard(${s.id})" title="طباعة البطاقة">🖨️ بطاقة</button>
-      </td>
-    </tr>`).join('');
-}
-
-async function addStudent() {
-  const name    = document.getElementById('studentName').value.trim();
-  const classId = document.getElementById('studentClass').value;
-  const num     = document.getElementById('studentNum').value.trim();
-  if (!name || !classId) { toast('الاسم والصف مطلوبان', 'error'); return; }
-  const fd = new FormData();
-  fd.append('full_name', name); fd.append('class_id', classId); fd.append('student_number', num);
-  const r = await api('add_student', 'POST', fd);
-  if (r.success) {
-    toast(r.message); closeModal('modalAddStudent');
-    document.getElementById('studentName').value = '';
-    document.getElementById('studentNum').value = '';
-    loadStudentsAdmin();
-  } else toast(r.message, 'error');
-}
-
-function onFilterClassChange() {
-  const classId = document.getElementById('filterClass').value;
-  const btn = document.getElementById('btnDownloadClassCards');
-  if (btn) btn.style.display = classId ? 'inline-flex' : 'none';
-  loadStudentsAdmin();
-}
-
-function editStudent(id, name, classId, num) {
-  document.getElementById('editStudentId').value  = id;
-  document.getElementById('editStudentName').value = name;
-  document.getElementById('editStudentClass').value = classId;
-  document.getElementById('editStudentNum').value  = num;
-  openModal('modalEditStudent');
-}
-
-async function updateStudent() {
-  const fd = new FormData();
-  fd.append('id',             document.getElementById('editStudentId').value);
-  fd.append('full_name',      document.getElementById('editStudentName').value.trim());
-  fd.append('class_id',       document.getElementById('editStudentClass').value);
-  fd.append('student_number', document.getElementById('editStudentNum').value.trim());
-  const r = await api('update_student', 'POST', fd);
-  if (r.success) { toast(r.message); closeModal('modalEditStudent'); loadStudentsAdmin(); }
-  else toast(r.message, 'error');
-}
-
 async function deleteStudent(id, name) {
-  const ok = await confirmDialog(`هل أنت متأكد من حذف الطالب <strong>${name}</strong>؟`);
-  if (!ok) return;
+  if (!confirm(`هل أنت متأكد من حذف الطالب ${name}؟`)) return;
   const fd = new FormData(); fd.append('id', id);
   const r = await api('delete_student', 'POST', fd);
-  if (r.success) { toast(r.message); loadStudentsAdmin(); } else toast(r.message, 'error');
+  if (r.success) { toast(r.message); initPage(); } else toast(r.message, 'error');
 }
 
-// ---- USERS ----
-async function loadUsers() {
-  const r = await apiGet('get_users');
-  const tbody = document.getElementById('usersTable');
-  if (!r.data?.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px">لا يوجد مستخدمون</td></tr>'; return; }
-  tbody.innerHTML = r.data.map((u, i) => `
-    <tr>
-      <td style="color:var(--text-muted)">${i+1}</td>
-      <td style="font-weight:700">${u.full_name}</td>
-      <td dir="ltr" style="font-family:monospace;font-size:13px">${u.username}</td>
-      <td><span class="badge ${u.role==='admin'?'badge-admin':'badge-mgmt'}">${u.role==='admin'?'🛡️ مدير':'📋 إداري'}</span></td>
-      <td><button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id},'${u.full_name.replace(/'/g,"\\'")}')">🗑️</button></td>
-    </tr>`).join('');
-}
-
-async function addUser() {
-  const fd = new FormData();
-  fd.append('full_name', document.getElementById('userFullName').value.trim());
-  fd.append('username',  document.getElementById('userUsername').value.trim());
-  fd.append('password',  document.getElementById('userPassword').value);
-  fd.append('role',      document.getElementById('userRole').value);
-  const r = await api('add_user', 'POST', fd);
-  if (r.success) {
-    toast(r.message); closeModal('modalAddUser'); loadUsers();
-    ['userFullName','userUsername','userPassword'].forEach(id => document.getElementById(id).value = '');
-  } else toast(r.message, 'error');
-}
-
-async function deleteUser(id, name) {
-  const ok = await confirmDialog(`هل أنت متأكد من حذف المستخدم <strong>${name}</strong>؟`);
-  if (!ok) return;
-  const fd = new FormData(); fd.append('id', id);
-  const r = await api('delete_user', 'POST', fd);
-  if (r.success) { toast(r.message); loadUsers(); } else toast(r.message, 'error');
-}
-
-// ---- LOG ----
-async function loadLog() {
-  const r = await apiGet('get_today_log');
-  const body = document.getElementById('logBody');
-  if (!r.data?.length) {
-    body.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><h3>لا توجد استدعاءات اليوم</h3><p>ستظهر هنا عند استدعاء الطلاب</p></div>';
-    return;
-  }
-  function resetCalls() {
-    if (!confirm('هل أنت متأكد من تصفير الاستدعاءات؟')) return;
-
-    fetch('data.php?action=reset_calls')
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message);
-        location.reload();
-    });
-}
-  body.innerHTML = `<div class="table-wrap"><table>
-    <thead><tr><th>الوقت</th><th>الطالب</th><th>الصف</th><th>بواسطة</th></tr></thead>
-    <tbody>${r.data.map(d => `
-      <tr>
-        <td><span class="badge badge-called">🕐 ${formatTime(d.call_time)}</span></td>
-        <td style="font-weight:700">${d.student_name}</td>
-        <td>${d.class_name}</td>
-        <td style="color:var(--text-muted)">${d.called_by_name}</td>
-      </tr>`).join('')}
-    </tbody>
-  </table></div>`;
-}
-
-
-// ---- RENAME CLASS ----
-function openRenameClass(id, name, grade) {
-  document.getElementById('renameClassId').value   = id;
-  document.getElementById('renameClassName').value  = name;
-  document.getElementById('renameClassGrade').value = grade;
-  openModal('modalRenameClass');
-}
-
-async function renameClass() {
-  const fd = new FormData();
-  fd.append('id',    document.getElementById('renameClassId').value);
-  fd.append('name',  document.getElementById('renameClassName').value.trim());
-  fd.append('grade', document.getElementById('renameClassGrade').value.trim());
-  if (!fd.get('name')) { toast('اسم الصف مطلوب', 'error'); return; }
-  const r = await api('rename_class', 'POST', fd);
-  if (r.success) { toast(r.message); closeModal('modalRenameClass'); loadClasses(); loadClassesIntoSelect(); }
-  else toast(r.message, 'error');
-}
-
-// ---- BULK IMPORT ----
-async function openBulkImport() {
-  // Make sure classes are loaded into select
-  const r = await apiGet('get_classes');
-  const opts = (r.data||[]).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-  document.getElementById('bulkClassId').innerHTML = '<option value="">— اختر الصف —</option>' + opts;
-  document.getElementById('bulkNames').value = '';
-  document.getElementById('bulkResult').textContent = '';
-  document.getElementById('bulkPreviewCount').textContent = '';
-  openModal('modalBulkImport');
-}
-
-// Live count preview
-document.addEventListener('DOMContentLoaded', () => {
-  const ta = document.getElementById('bulkNames');
-  if (ta) {
-    ta.addEventListener('input', () => {
-      const lines = ta.value.split(/[\r\n،,]+/).map(l => {
-        const n = l.replace(/^[\d٠-٩]+[.\-\)\s]+/, '').trim();
-        return n;
-      }).filter(l => l.length >= 2);
-      document.getElementById('bulkPreviewCount').textContent =
-        lines.length > 0 ? `✅ سيتم إضافة ${lines.length} اسم` : '';
-    });
-  }
-});
-
-async function bulkImport() {
-  const classId = document.getElementById('bulkClassId').value;
-  const names   = document.getElementById('bulkNames').value.trim();
-  if (!classId) { toast('اختر الصف أولاً', 'error'); return; }
-  if (!names)   { toast('الصق الأسماء أولاً', 'error'); return; }
-
-  const btn = document.getElementById('bulkImportBtn');
-  btn.disabled = true;
-  btn.textContent = 'جاري الاستيراد...';
-
-  const fd = new FormData();
-  fd.append('class_id', classId);
-  fd.append('names', names);
-  const r = await api('bulk_import_students', 'POST', fd);
-
-  btn.disabled = false;
-  btn.textContent = '📥 استيراد الأسماء';
-
-  if (r.success) {
-    document.getElementById('bulkResult').textContent = r.message;
-    document.getElementById('bulkResult').style.color = 'var(--success)';
-    document.getElementById('bulkNames').value = '';
-    document.getElementById('bulkPreviewCount').textContent = '';
-    toast(r.message);
-    loadStudentsAdmin();
-  } else {
-    document.getElementById('bulkResult').textContent = r.message;
-    document.getElementById('bulkResult').style.color = 'var(--danger)';
-    toast(r.message, 'error');
-  }
-}
-
-// Init
-loadDashboard();
-
-/* =============================================
-   QR CARD / PDF FUNCTIONS
-============================================= */
-
-const SITE_BASE = window.location.origin;
-
-/**
- * Generate an ID card HTML element for a student
- */
-function buildCardHTML(student) {
-  const callUrl = `${SITE_BASE}/call.php?code=${student.barcode}`;
-  return `
-  <div class="id-card" style="
-    width: 340px; height: 215px;
-    background: linear-gradient(135deg, #0f2238 0%, #1a3a5c 60%, #0f2238 100%);
-    border-radius: 16px;
-    padding: 20px;
-    color: #fff;
-    font-family: Tajawal, Arial, sans-serif;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    direction: rtl;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
-    flex-shrink: 0;
-  ">
-    <!-- Background decoration -->
-    <div style="position:absolute;top:-30px;left:-30px;width:120px;height:120px;border-radius:50%;background:rgba(240,165,0,0.08);pointer-events:none"></div>
-    <div style="position:absolute;bottom:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:rgba(240,165,0,0.06);pointer-events:none"></div>
-
-    <!-- Right side: Student info -->
-    <div style="flex:1;z-index:1;overflow:hidden">
-      <div style="font-size:10px;color:rgba(240,165,0,0.9);font-weight:700;letter-spacing:2px;margin-bottom:8px;text-transform:uppercase">🏫 نظام استدعاء الطلاب</div>
-      <div style="font-size:17px;font-weight:900;line-height:1.3;margin-bottom:6px;color:#fff">${student.full_name}</div>
-      <div style="display:inline-block;background:rgba(240,165,0,0.2);color:#f0a500;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid rgba(240,165,0,0.4);margin-bottom:8px">الصف: ${student.class_name}</div>
-      ${student.student_number ? `<div style="font-size:11px;color:rgba(255,255,255,0.5)">رقم الطالب: ${student.student_number}</div>` : ''}
-      <div style="position:absolute;bottom:20px;right:20px;font-size:9px;color:rgba(255,255,255,0.3)">بطاقة تعريفية</div>
-    </div>
-
-    <!-- QR Code -->
-    <div style="z-index:1;flex-shrink:0">
-      <div id="qr-${student.id}" style="
-        background:#fff;
-        padding:6px;
-        border-radius:10px;
-        width:90px;
-        height:90px;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-      "></div>
-      <div style="font-size:8px;color:rgba(255,255,255,0.4);text-align:center;margin-top:5px">امسح للاستدعاء</div>
-    </div>
-  </div>
-  `;
-}
-
-/**
- * Generate QR for a specific container element
- */
-function generateQR(elementId, url) {
-  const el = document.getElementById(elementId);
-  if (!el) return;
-  el.innerHTML = '';
-  new QRCode(el, {
-    text: url,
-    width: 78,
-    height: 78,
-    colorDark: '#0f2238',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.M
-  });
-}
-
-/**
- * Print a single student's ID card as PDF
- */
-async function printStudentCard(studentId) {
-  const students = window._lastStudentsData || [];
-  const student  = students.find(s => s.id == studentId);
-  if (!student || !student.barcode) {
-    toast('لا يوجد باركود لهذا الطالب. قم بتشغيل migrate_barcodes.php أولاً', 'error');
-    return;
-  }
-
-  toast('جاري إنشاء البطاقة...');
-
-  // Create hidden container
-  const container = document.createElement('div');
-  container.style.cssText = 'position:fixed;top:-9999px;left:-9999px;background:#f0f4f9;padding:20px';
-  container.innerHTML = buildCardHTML(student);
-  document.body.appendChild(container);
-
-  // Generate QR
-  const callUrl = `${SITE_BASE}/call.php?code=${student.barcode}`;
-  generateQR(`qr-${student.id}`, callUrl);
-
-  // Wait for QR to render
-  await new Promise(r => setTimeout(r, 600));
-
-  const cardEl = container.querySelector('.id-card');
-  const opt = {
-    margin:       [5, 5],
-    filename:     `بطاقة_${student.full_name}.pdf`,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 3, useCORS: true, logging: false },
-    jsPDF:        { unit: 'mm', format: [100, 65], orientation: 'landscape' }
-  };
-
-  await html2pdf().set(opt).from(cardEl).save();
-  document.body.removeChild(container);
-  toast('تم تحميل البطاقة بنجاح ✅');
-}
-
-/**
- * Download PDF for cards of a specific class (or all)
- */
-async function downloadCardsForStudents(students, filename) {
-  if (!students.length) { toast('لا يوجد طلاب', 'error'); return; }
-
-  toast('جاري إنشاء ملف PDF...');
-
-  // Build all cards in a grid
-  const container = document.createElement('div');
-  container.style.cssText = 'position:fixed;top:-9999px;left:-9999px;background:#f0f4f9;padding:20px;display:flex;flex-wrap:wrap;gap:20px;width:750px';
-
-  students.forEach(s => {
-    if (!s.barcode) return;
-    container.insertAdjacentHTML('beforeend', buildCardHTML(s));
-  });
-
-  document.body.appendChild(container);
-
-  // Generate all QR codes
-  students.forEach(s => {
-    if (!s.barcode) return;
-    const callUrl = `${SITE_BASE}/call.php?code=${s.barcode}`;
-    generateQR(`qr-${s.id}`, callUrl);
-  });
-
-  // Wait for all QRs to render
-  await new Promise(r => setTimeout(r, 800));
-
-  const opt = {
-    margin:       10,
-    filename:     filename,
-    image:        { type: 'jpeg', quality: 0.95 },
-    html2canvas:  { scale: 2, useCORS: true, logging: false },
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
-  };
-
-  await html2pdf().set(opt).from(container).save();
-  document.body.removeChild(container);
-  toast('تم تحميل بطاقات PDF بنجاح ✅');
-}
-
-async function downloadClassCards() {
-  const classId = document.getElementById('filterClass').value;
-  if (!classId) { downloadAllCards(); return; }
-
-  const r = await apiGet('get_all_students', { class_id: classId });
-  const students = r.data || [];
-  const classOpt = document.getElementById('filterClass').selectedOptions[0];
-  const className = classOpt ? classOpt.text : 'الصف';
-  await downloadCardsForStudents(students, `بطاقات_${className}.pdf`);
-}
-
-async function downloadAllCards() {
-  const r = await apiGet('get_all_students');
-  const students = r.data || [];
-  await downloadCardsForStudents(students, 'جميع_البطاقات.pdf');
-}
-
-  async function resetCalls() {
-  const ok = confirm("هل أنت متأكد من تصفير جميع الاستدعاءات؟");
-  if (!ok) return;
-
+async function resetCalls() {
+  if (!confirm("هل أنت متأكد من تصفير جميع الاستدعاءات؟")) return;
   const r = await api('reset_calls', 'POST', new FormData());
-
-  if (r.success) {
-    alert("تم تصفير الاستدعاءات بنجاح");
-    loadDashboard?.();
-    loadLog?.();
-  } else {
-    alert(r.message || "حدث خطأ");
-  }
+  if (r.success) { alert("تم تصفير الاستدعاءات بنجاح"); loadDashboard(); loadLog(); }
+  else alert(r.message || "حدث خطأ");
 }
+
+function showSection(name) {
+  document.querySelectorAll('[id^="section-"]').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('section-' + name).style.display = 'block';
+  document.getElementById('sectionTitle').textContent = sectionTitles[name] || 'لوحة التحكم';
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'students') initPage();
+  if (name === 'log') loadLog();
+}
+
+const sectionTitles = { dashboard: 'لوحة التحكم', classes: 'إدارة الصفوف', students: 'إدارة الطلاب', users: 'إدارة المستخدمين', log: 'سجل الاستدعاءات' };
+
+// Initialize
+initPage();
+
 </script>
 </body>
 </html>
