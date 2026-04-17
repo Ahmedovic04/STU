@@ -680,7 +680,10 @@ async function printBulk(mode) {
 
 function openPrintWindow(students) {
     const printWindow = window.open('', '_blank');
-    const cardsHtml = students.map(s => createCardHTML(s)).join('');
+    if (!printWindow) {
+        alert('يرجى السماح بفتح النوافذ المنبثقة (Pop-ups) لتتمكن من الطباعة');
+        return;
+    }
     
     // Build the table structure for 6 cards per page
     let contentHtml = '';
@@ -689,12 +692,8 @@ function openPrintWindow(students) {
         contentHtml += `<table class="bulk-print-table">`;
         for (let j = 0; j < chunk.length; j += 2) {
             contentHtml += `<tr>`;
-            contentHtml += `<td>${createCardHTML(chunk[j])}</td>`;
-            if (chunk[j+1]) {
-                contentHtml += `<td>${createCardHTML(chunk[j+1])}</td>`;
-            } else {
-                contentHtml += `<td></td>`;
-            }
+            contentHtml += `<td>${chunk[j] ? createCardHTML(chunk[j]) : ''}</td>`;
+            contentHtml += `<td>${chunk[j+1] ? createCardHTML(chunk[j+1]) : ''}</td>`;
             contentHtml += `</tr>`;
         }
         contentHtml += `</table>`;
@@ -703,41 +702,57 @@ function openPrintWindow(students) {
         }
     }
 
+    const currentStyles = Array.from(document.querySelectorAll('style')).map(s => s.innerHTML).join('\n');
+
     printWindow.document.write(`
         <html>
         <head>
-            <title>طباعة البطاقات</title>
+            <title>طباعة بطاقات الطلاب - ${SITE_NAME}</title>
             <style>
-                ${document.querySelector('style').innerHTML}
-                body { background: white; padding: 0; margin: 0; direction: rtl; }
-                .bulk-print-table { width: 100%; border-collapse: separate; border-spacing: 15mm; }
-                .bulk-print-table td { vertical-align: top; width: 3.37in; }
-                .page-break { page-break-after: always; }
+                ${currentStyles}
+                body { background: white; padding: 10mm; margin: 0; direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+                .bulk-print-table { width: 100%; border-collapse: separate; border-spacing: 10mm; table-layout: fixed; }
+                .bulk-print-table td { vertical-align: top; width: 50%; padding: 0; }
+                .id-card-wrapper { margin: 0 auto; box-shadow: none; border: 1px solid #eee; }
+                .page-break { page-break-after: always; height: 1px; }
                 @media print {
-                    @page { size: A4 portrait; margin: 10mm; }
-                    body { margin: 0; }
+                    @page { size: A4 portrait; margin: 0; }
+                    body { padding: 10mm; }
+                    .id-card-wrapper { border: 1px solid #ddd; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 }
             </style>
-            <script src="${SITE_BASE}/assets/js/qrcode.min.js"></script>
         </head>
         <body>
             <div id="print-content">${contentHtml}</div>
+            <script src="${SITE_BASE}/assets/js/qrcode.min.js"></script>
             <script>
-                window.onload = function() {
+                function generateAllQRs() {
                     const students = ${JSON.stringify(students)};
                     students.forEach(s => {
-                        new QRCode(document.getElementById('qr-box-' + s.id), {
-                            text: '${SITE_BASE}/call.php?code=' + s.barcode,
-                            width: 72,
-                            height: 72,
-                            correctLevel: 1
-                        });
+                        const el = document.getElementById('qr-box-' + s.id);
+                        if (el) {
+                            new QRCode(el, {
+                                text: '${SITE_BASE}/call.php?code=' + s.barcode,
+                                width: 72,
+                                height: 72,
+                                correctLevel: 1
+                            });
+                        }
                     });
+                    
+                    // Wait for QRs to render before printing
                     setTimeout(() => {
                         window.print();
-                        // window.close(); // Optional
-                    }, 1000);
-                };
+                    }, 800);
+                }
+
+                // Check if QRCode library is loaded
+                if (typeof QRCode === 'undefined') {
+                    const script = document.querySelector('script[src*="qrcode"]');
+                    script.onload = generateAllQRs;
+                } else {
+                    generateAllQRs();
+                }
             </script>
         </body>
         </html>
