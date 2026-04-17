@@ -11,7 +11,7 @@ define('DB_PASS', getenv('MYSQLPASSWORD') ?: '');
 define('DB_CHARSET', 'utf8mb4');
 define('DB_PORT', getenv('MYSQLPORT') ?: '3306');
 
-define('SITE_NAME', 'نظام استدعاء الطلاب');
+define('SITE_NAME', 'مدرسة معيذر الابتدائية للبنين');
 define('SITE_URL', getenv('RAILWAY_PUBLIC_DOMAIN') ? 'https://'.getenv('RAILWAY_PUBLIC_DOMAIN') : 'http://localhost/school-dismissal');
 
 // =============================================

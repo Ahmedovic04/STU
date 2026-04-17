@@ -12,7 +12,7 @@ include '../includes/header.php';
   <div class="sidebar-logo">
     <div class="logo-icon">📋</div>
     <div>
-      <div class="logo-text">نظام الاستدعاء</div>
+      <div class="logo-text">مدرسة معيذر</div>
       <div class="logo-sub">واجهة الإداري</div>
     </div>
   </div>

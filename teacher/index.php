@@ -400,7 +400,7 @@ body {
   <div class="header-brand">
     <div class="header-icon">📋</div>
     <div>
-      <div class="header-title">نظام استدعاء الطلاب</div>
+      <div class="header-title">مدرسة معيذر الابتدائية للبنين</div>
       <div class="header-sub">واجهة المعلم</div>
     </div>
   </div>

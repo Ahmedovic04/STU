@@ -253,7 +253,7 @@ body::before {
 
 <div class="card">
   <div class="logo">🏫</div>
-  <div class="site-name">نظام استدعاء الطلاب</div>
+  <div class="site-name">مدرسة معيذر الابتدائية للبنين</div>
   <div class="divider"></div>
 
   <?php if ($error): ?>

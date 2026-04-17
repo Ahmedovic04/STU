@@ -389,9 +389,7 @@
       <button type="submit" class="btn-login" id="loginBtn">دخول</button>
 
       <div class="creds-note">
-        <strong>بيانات تجريبية:</strong><br>
-        المدير: <strong>admin</strong> / <strong>password</strong><br>
-        الإداري: <strong>mgmt1</strong> أو <strong>mgmt2</strong> / <strong>password</strong>
+        جميع الحقوق محفوظة &copy; <?= date('Y') ?> مدرسة معيذر الابتدائية للبنين
       </div>
     </form>
 
