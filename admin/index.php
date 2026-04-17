@@ -470,9 +470,16 @@ async function loadClasses() {
         return;
     }
     tbody.innerHTML = allClasses.map((c, i) => {
-        return '<tr><td>' + (i+1) + '</td><td>' + c.name + '</td><td>' + (c.grade || '—') + '</td>' +
-               '<td><button class="btn btn-ghost btn-sm" onclick="openRenameClass(' + c.id + ',\'' + c.name.replace(/'/g, "\\'") + '\',\'' + (c.grade || '').replace(/'/g, "\\'") + '\')">✏️</button>' +
-               '<button class="btn btn-danger btn-sm" onclick="deleteClass(' + c.id + ',\'' + c.name + '\')">🗑️</button></td></tr>';
+        return '<tr>' +
+               '<td>' + (i+1) + '</td>' +
+               '<td>' + c.name + '</td>' +
+               '<td>' + (c.grade || '—') + '</td>' +
+               '<td>' + (c.student_count || 0) + '</td>' +
+               '<td>' +
+                 '<button class="btn btn-ghost btn-sm" onclick="openRenameClass(' + c.id + ',\'' + c.name.replace(/'/g, "\\'") + '\',\'' + (c.grade || '').replace(/'/g, "\\'") + '\')">✏️</button>' +
+                 '<button class="btn btn-danger btn-sm" onclick="deleteClass(' + c.id + ',\'' + c.name + '\')">🗑️</button>' +
+               '</td>' +
+               '</tr>';
     }).join('');
 }
 
@@ -688,7 +695,21 @@ async function renameClass() {
 
 function formatTime(ts) {
     if (!ts) return '—';
-    const d = new Date(ts);
+    // Replace space with T to make it ISO compliant for better browser support
+    const dateStr = ts.includes(' ') ? ts.replace(' ', 'T') : ts;
+    const d = new Date(dateStr);
+    
+    // Fallback for very old browsers or weird formats
+    if (isNaN(d.getTime())) {
+        // Try to extract time manually if it's HH:MM:SS
+        const parts = ts.split(' ');
+        const timePart = parts.length > 1 ? parts[1] : parts[0];
+        if (timePart.includes(':')) {
+            return timePart.split(':').slice(0, 2).join(':');
+        }
+        return ts;
+    }
+    
     return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
 }
 

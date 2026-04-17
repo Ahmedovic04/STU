@@ -10,7 +10,12 @@ $today = date('Y-m-d');
 /* ================= PUBLIC ================= */
 
 if ($action === 'get_classes') {
-    $stmt = $db->query("SELECT * FROM classes ORDER BY grade, name");
+    $stmt = $db->query("
+        SELECT c.*, 
+               (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id) as student_count 
+        FROM classes c 
+        ORDER BY c.grade, c.name
+    ");
     jsonResponse(true, '', $stmt->fetchAll());
 }
 
