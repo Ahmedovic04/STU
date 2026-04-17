@@ -426,6 +426,7 @@ include '../includes/header.php';
 let allClasses = [];
 let allStudents = [];
 const SITE_BASE = window.location.origin;
+const SITE_NAME = '<?= SITE_NAME ?>';
 
 // Set current date
 document.getElementById('todayDate').textContent = arabicDate();
