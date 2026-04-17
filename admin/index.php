@@ -660,34 +660,95 @@ function createCardHTML(student) {
 async function printSingleCard(studentId) {
     const student = allStudents.find(s => s.id == studentId);
     if (!student) return;
-    toast('جاري التجهيز...');
+    toast('جاري تجهيز البطاقة...');
     const printArea = document.getElementById('print-area');
     printArea.innerHTML = `<div style="padding:10px; background:white;">${createCardHTML(student)}</div>`;
+    
     await new Promise(r => setTimeout(r, 100));
-    new QRCode(document.getElementById(`qr-box-${student.id}`), { text: `${SITE_BASE}/call.php?code=${student.barcode}`, width: 72, height: 72 });
-    await new Promise(r => setTimeout(r, 500));
-    const opt = { margin: 0, filename: `بطاقة_${student.full_name}.pdf`, html2canvas: { scale: 3, useCORS: true }, jsPDF: { unit: 'in', format: [3.37, 2.125], orientation: 'landscape' } };
+
+    new QRCode(printArea.querySelector(`#qr-box-${student.id}`), {
+        text: `${SITE_BASE}/call.php?code=${student.barcode}`,
+        width: 72,
+        height: 72,
+        correctLevel: QRCode.CorrectLevel.H
+    });
+
+    await new Promise(r => setTimeout(r, 800));
+
+    const opt = {
+        margin: 0,
+        filename: `بطاقة_${student.full_name}.pdf`,
+        image: { type: 'jpeg', quality: 1.0 },
+        html2canvas: { scale: 3, useCORS: true, allowTaint: true },
+        jsPDF: { unit: 'in', format: [3.37, 2.125], orientation: 'landscape' }
+    };
+
     html2pdf().set(opt).from(printArea.firstElementChild).save().then(() => toast('تم التحميل ✅'));
 }
 
 async function printBulk(mode) {
     const classId = document.getElementById('filterClass').value;
     const students = mode === 'class' ? allStudents.filter(s => s.class_id == classId) : allStudents;
-    if (students.length === 0) { toast('لا يوجد طلاب لطباعتهم', 'error'); return; }
-    toast('جاري المعالجة...');
+    
+    if (students.length === 0) {
+        toast('لا يوجد طلاب لطباعتهم', 'error');
+        return;
+    }
+
+    toast('جاري معالجة البطاقات... يرجى الانتظار');
     const printArea = document.getElementById('print-area');
     printArea.innerHTML = '';
+    
     for (let i = 0; i < students.length; i += 6) {
         const page = document.createElement('div');
         page.className = 'bulk-print-page' + (i + 6 < students.length ? ' page-break' : '');
+        
         const chunk = students.slice(i, i + 6);
-        chunk.forEach(s => { const wrapper = document.createElement('div'); wrapper.innerHTML = createCardHTML(s); page.appendChild(wrapper); });
+        chunk.forEach(s => {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = createCardHTML(s);
+            page.appendChild(wrapper);
+        });
+        
         printArea.appendChild(page);
-        chunk.forEach(s => { new QRCode(document.getElementById(`qr-box-${s.id}`), { text: `${SITE_BASE}/call.php?code=${s.barcode}`, width: 72, height: 72 }); });
+        
+        // Generate QRs specific to this page
+        chunk.forEach(s => {
+            const qrContainer = page.querySelector(`#qr-box-${s.id}`);
+            if (qrContainer) {
+                new QRCode(qrContainer, {
+                    text: `${SITE_BASE}/call.php?code=${s.barcode}`,
+                    width: 72,
+                    height: 72,
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            }
+        });
     }
-    await new Promise(r => setTimeout(r, 1200));
-    const opt = { margin: 0, filename: 'بطاقات.pdf', html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } };
-    html2pdf().set(opt).from(printArea).save().then(() => toast('تم التحميل بنجاح ✅'));
+
+    // Significant delay to ensure all canvas elements are rendered
+    await new Promise(r => setTimeout(r, 2500));
+
+    const opt = {
+        margin: 0,
+        filename: mode === 'class' ? 'بطاقات_الصف.pdf' : 'جميع_البطاقات.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            allowTaint: true,
+            logging: false
+        },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+
+    try {
+        await html2pdf().set(opt).from(printArea).save();
+        toast('تم تحميل جميع البطاقات بنجاح ✅');
+    } catch (err) {
+        console.error('PDF Error:', err);
+        toast('حدث خطأ أثناء إنشاء الملف', 'error');
+    }
 }
 
 window.downloadClassCards = () => printBulk('class');
