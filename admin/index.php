@@ -380,59 +380,12 @@ include '../includes/header.php';
         height: 80px;
         background: white;
         padding: 4px;
-        border: 1px solid #e2e8f0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-    }
-    .id-card-footer {
-        background: #f8fafc;
-        padding: 4px;
-        text-align: center;
-        font-size: 8pt;
-        color: #94a3b8;
-        border-top: 1px solid #e2e8f0;
-    }
-    
-    /* Print Layout for Bulk (6 per A4) using Table for maximum compatibility */
-    .bulk-print-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0.2in;
-        background: white;
-    }
-    .bulk-print-table td {
-        vertical-align: top;
-        padding: 0;
-        width: 3.37in;
-    }
-    .page-break {
-        page-break-after: always;
-        display: block;
-        height: 1px;
-    }
-    #print-area {
-        background: white;
-        padding: 20px;
-        min-height: 100vh;
-    }
-</style>
-
-<!-- Hidden Container for PDF Generation -->
-<div id="print-area" style="position: absolute; top: 0; left: 0; width: 210mm; z-index: -1000; opacity: 0; background: white; overflow: visible;"></div>
-
-<script src="../assets/js/common.js"></script>
-<script src="../assets/js/qrcode.min.js"></script>
-<script src="../assets/js/html2pdf.bundle.min.js"></script>
-
-<script>
+        border: 1px sol<script>
 let allClasses = [];
 let allStudents = [];
 const SITE_BASE = window.location.origin;
 const SITE_NAME = '<?= SITE_NAME ?>';
 
-// Set current date
 document.getElementById('todayDate').textContent = arabicDate();
 
 async function initPage() {
@@ -443,10 +396,8 @@ async function loadInitialData() {
     try {
         const classesRes = await apiGet('get_classes');
         allClasses = classesRes.data || [];
-        
         const studentsRes = await apiGet('get_all_students');
         allStudents = studentsRes.data || [];
-        
         renderFilters();
         loadStudentsAdmin();
         loadDashboard();
@@ -457,8 +408,7 @@ async function loadInitialData() {
 
 function renderFilters() {
     const filters = ['filterClass', 'studentClass', 'editStudentClass', 'bulkClassId'];
-    const options = allClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-    
+    const options = allClasses.map(c => '<option value="' + c.id + '">' + c.name + '</option>').join('');
     filters.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -469,338 +419,235 @@ function renderFilters() {
 }
 
 function showSection(name) {
-  document.querySelectorAll('[id^="section-"]').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  document.getElementById('section-' + name).style.display = 'block';
-  document.getElementById('sectionTitle').textContent = sectionTitles[name] || 'لوحة التحكم';
-  
-  if (name === 'dashboard') loadDashboard();
-  if (name === 'classes')   loadClasses();
-  if (name === 'students')  loadInitialData();
-  if (name === 'users')     loadUsers();
-  if (name === 'log')       loadLog();
+    document.querySelectorAll('[id^="section-"]').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    document.getElementById('section-' + name).style.display = 'block';
+    document.getElementById('sectionTitle').textContent = sectionTitles[name] || 'لوحة التحكم';
+    if (name === 'dashboard') loadDashboard();
+    if (name === 'classes')   loadClasses();
+    if (name === 'students')  loadInitialData();
+    if (name === 'users')     loadUsers();
+    if (name === 'log')       loadLog();
 }
 
 const sectionTitles = {
-  dashboard: 'لوحة التحكم',
-  classes:   'إدارة الصفوف',
-  students:  'إدارة الطلاب',
-  users:     'إدارة المستخدمين',
-  log:       'سجل الاستدعاءات'
+    dashboard: 'لوحة التحكم',
+    classes: 'إدارة الصفوف',
+    students: 'إدارة الطلاب',
+    users: 'إدارة المستخدمين',
+    log: 'سجل الاستدعاءات'
 };
 
-// --- CLASSES ---
 async function loadClasses() {
-  const r = await apiGet('get_classes');
-  allClasses = r.data || [];
-  const tbody = document.getElementById('classesTable');
-  if (!allClasses.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px">لا توجد صفوف</td></tr>';
-    return;
-  }
-  tbody.innerHTML = allClasses.map((c, i) => `
-    <tr>
-      <td style="color:var(--text-muted)">${i+1}</td>
-      <td style="font-weight:700">${c.name}</td>
-      <td>${c.grade || '—'}</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="openRenameClass(${c.id},'${c.name.replace(/'/g,"\\'")}','${(c.grade||'').replace(/'/g,"\\'")}')">✏️</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteClass(${c.id},'${c.name}')">🗑️</button></td>
-    </tr>`).join('');
+    const r = await apiGet('get_classes');
+    allClasses = r.data || [];
+    const tbody = document.getElementById('classesTable');
+    if (!allClasses.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px">لا توجد صفوف</td></tr>';
+        return;
+    }
+    tbody.innerHTML = allClasses.map((c, i) => {
+        return '<tr><td>' + (i+1) + '</td><td>' + c.name + '</td><td>' + (c.grade || '—') + '</td>' +
+               '<td><button class="btn btn-ghost btn-sm" onclick="openRenameClass(' + c.id + ',\'' + c.name.replace(/'/g, "\\'") + '\',\'' + (c.grade || '').replace(/'/g, "\\'") + '\')">✏️</button>' +
+               '<button class="btn btn-danger btn-sm" onclick="deleteClass(' + c.id + ',\'' + c.name + '\')">🗑️</button></td></tr>';
+    }).join('');
 }
 
 async function addClass() {
-  const name = document.getElementById('className').value.trim();
-  const grade = document.getElementById('classGrade').value.trim();
-  if (!name) { toast('اسم الصف مطلوب', 'error'); return; }
-  const fd = new FormData(); fd.append('name', name); fd.append('grade', grade);
-  const r = await api('add_class', 'POST', fd);
-  if (r.success) { toast(r.message); closeModal('modalAddClass'); loadClasses(); } else toast(r.message, 'error');
+    const name = document.getElementById('className').value.trim();
+    const grade = document.getElementById('classGrade').value.trim();
+    if (!name) { toast('اسم الصف مطلوب', 'error'); return; }
+    const fd = new FormData(); fd.append('name', name); fd.append('grade', grade);
+    const r = await api('add_class', 'POST', fd);
+    if (r.success) { toast(r.message); closeModal('modalAddClass'); loadClasses(); } else toast(r.message, 'error');
 }
 
 async function deleteClass(id, name) {
-  if (!confirm(`هل أنت متأكد من حذف الصف ${name}؟`)) return;
-  const fd = new FormData(); fd.append('id', id);
-  const r = await api('delete_class', 'POST', fd);
-  if (r.success) { toast(r.message); loadClasses(); } else toast(r.message, 'error');
+    if (!confirm('هل أنت متأكد من حذف الصف ' + name + '؟')) return;
+    const fd = new FormData(); fd.append('id', id);
+    const r = await api('delete_class', 'POST', fd);
+    if (r.success) { toast(r.message); loadClasses(); } else toast(r.message, 'error');
 }
 
-// --- STUDENTS ---
 function loadStudentsAdmin() {
     const classId = document.getElementById('filterClass').value;
     const tbody = document.getElementById('studentsTable');
     tbody.innerHTML = '';
-    
     const filtered = classId ? allStudents.filter(s => s.class_id == classId) : allStudents;
     const btnBulkClass = document.getElementById('btnDownloadClassCards');
     if (btnBulkClass) btnBulkClass.style.display = classId ? 'inline-flex' : 'none';
-
     if (filtered.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px">لا يوجد طلاب</td></tr>';
         return;
     }
-
     filtered.forEach((s, i) => {
-        tbody.innerHTML += `
-            <tr>
-                <td style="color:var(--text-muted)">${i+1}</td>
-                <td style="font-weight:700">${s.full_name}</td>
-                <td>${s.student_number || '—'}</td>
-                <td><span class="badge badge-admin">${s.class_name}</span></td>
-                <td style="display:flex;gap:6px">
-                    <button class="btn btn-ghost btn-sm" onclick="printSingleCard(${s.id})" title="طباعة البطاقة">🖨️</button>
-                    <button class="btn btn-ghost btn-sm" onclick="editStudent(${s.id},'${s.full_name.replace(/'/g,"\\'")}',${s.class_id},'${s.student_number||''}')">✏️</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteStudent(${s.id},'${s.full_name}')">🗑️</button>
-                </td>
-            </tr>
-        `;
+        tbody.innerHTML += '<tr><td>' + (i+1) + '</td><td>' + s.full_name + '</td><td>' + (s.student_number || '—') + '</td>' +
+            '<td><span class="badge badge-admin">' + s.class_name + '</span></td>' +
+            '<td style="display:flex;gap:6px">' +
+            '<button class="btn btn-ghost btn-sm" onclick="printSingleCard(' + s.id + ')">🖨️</button>' +
+            '<button class="btn btn-ghost btn-sm" onclick="editStudent(' + s.id + ',\'' + s.full_name.replace(/'/g, "\\'") + '\',' + s.class_id + ',\'' + (s.student_number || '') + '\')">✏️</button>' +
+            '<button class="btn btn-danger btn-sm" onclick="deleteStudent(' + s.id + ',\'' + s.full_name + '\')">🗑️</button></td></tr>';
     });
 }
 
 function onFilterClassChange() { loadStudentsAdmin(); }
 
 async function addStudent() {
-  const name = document.getElementById('studentName').value.trim();
-  const classId = document.getElementById('studentClass').value;
-  const num = document.getElementById('studentNum').value.trim();
-  if (!name || !classId) { toast('الاسم والصف مطلوبان', 'error'); return; }
-  const fd = new FormData(); fd.append('full_name', name); fd.append('class_id', classId); fd.append('student_number', num);
-  const r = await api('add_student', 'POST', fd);
-  if (r.success) { toast(r.message); closeModal('modalAddStudent'); loadInitialData(); } else toast(r.message, 'error');
+    const name = document.getElementById('studentName').value.trim();
+    const classId = document.getElementById('studentClass').value;
+    const num = document.getElementById('studentNum').value.trim();
+    if (!name || !classId) { toast('الاسم والصف مطلوبان', 'error'); return; }
+    const fd = new FormData(); fd.append('full_name', name); fd.append('class_id', classId); fd.append('student_number', num);
+    const r = await api('add_student', 'POST', fd);
+    if (r.success) { toast(r.message); closeModal('modalAddStudent'); loadInitialData(); } else toast(r.message, 'error');
 }
 
 function editStudent(id, name, classId, num) {
-  document.getElementById('editStudentId').value = id;
-  document.getElementById('editStudentName').value = name;
-  document.getElementById('editStudentClass').value = classId;
-  document.getElementById('editStudentNum').value = num;
-  openModal('modalEditStudent');
+    document.getElementById('editStudentId').value = id;
+    document.getElementById('editStudentName').value = name;
+    document.getElementById('editStudentClass').value = classId;
+    document.getElementById('editStudentNum').value = num;
+    openModal('modalEditStudent');
 }
 
 async function updateStudent() {
-  const fd = new FormData();
-  fd.append('id', document.getElementById('editStudentId').value);
-  fd.append('full_name', document.getElementById('editStudentName').value.trim());
-  fd.append('class_id', document.getElementById('editStudentClass').value);
-  fd.append('student_number', document.getElementById('editStudentNum').value.trim());
-  const r = await api('update_student', 'POST', fd);
-  if (r.success) { toast(r.message); closeModal('modalEditStudent'); loadInitialData(); } else toast(r.message, 'error');
+    const fd = new FormData();
+    fd.append('id', document.getElementById('editStudentId').value);
+    fd.append('full_name', document.getElementById('editStudentName').value.trim());
+    fd.append('class_id', document.getElementById('editStudentClass').value);
+    fd.append('student_number', document.getElementById('editStudentNum').value.trim());
+    const r = await api('update_student', 'POST', fd);
+    if (r.success) { toast(r.message); closeModal('modalEditStudent'); loadInitialData(); } else toast(r.message, 'error');
 }
 
 async function deleteStudent(id, name) {
-  if (!confirm(`هل أنت متأكد من حذف الطالب ${name}؟`)) return;
-  const fd = new FormData(); fd.append('id', id);
-  const r = await api('delete_student', 'POST', fd);
-  if (r.success) { toast(r.message); loadInitialData(); } else toast(r.message, 'error');
+    if (!confirm('هل أنت متأكد من حذف الطالب ' + name + '؟')) return;
+    const fd = new FormData(); fd.append('id', id);
+    const r = await api('delete_student', 'POST', fd);
+    if (r.success) { toast(r.message); loadInitialData(); } else toast(r.message, 'error');
 }
 
-// --- BULK IMPORT ---
 async function openBulkImport() {
-  renderFilters(); // Refresh class list
-  document.getElementById('bulkNames').value = '';
-  document.getElementById('bulkResult').textContent = '';
-  openModal('modalBulkImport');
+    renderFilters();
+    document.getElementById('bulkNames').value = '';
+    document.getElementById('bulkResult').textContent = '';
+    openModal('modalBulkImport');
 }
 
 async function bulkImport() {
-  const classId = document.getElementById('bulkClassId').value;
-  const names = document.getElementById('bulkNames').value.trim();
-  if (!classId || !names) { toast('يرجى اختيار الصف ولصق الأسماء', 'error'); return; }
-  const btn = document.getElementById('bulkImportBtn');
-  btn.disabled = true; btn.textContent = 'جاري المعالجة...';
-  const fd = new FormData(); fd.append('class_id', classId); fd.append('names', names);
-  const r = await api('bulk_import_students', 'POST', fd);
-  btn.disabled = false; btn.textContent = '📥 استيراد الأسماء';
-  if (r.success) { toast(r.message); closeModal('modalBulkImport'); loadInitialData(); } else toast(r.message, 'error');
+    const classId = document.getElementById('bulkClassId').value;
+    const names = document.getElementById('bulkNames').value.trim();
+    if (!classId || !names) { toast('يرجى اختيار الصف ولصق الأسماء', 'error'); return; }
+    const btn = document.getElementById('bulkImportBtn');
+    btn.disabled = true; btn.textContent = 'جاري المعالجة...';
+    const fd = new FormData(); fd.append('class_id', classId); fd.append('names', names);
+    const r = await api('bulk_import_students', 'POST', fd);
+    btn.disabled = false; btn.textContent = '📥 استيراد الأسماء';
+    if (r.success) { toast(r.message); closeModal('modalBulkImport'); loadInitialData(); } else toast(r.message, 'error');
 }
 
-// --- USERS ---
 async function loadUsers() {
-  const r = await apiGet('get_users');
-  const tbody = document.getElementById('usersTable');
-  if (!r.data?.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px">لا يوجد مستخدمون</td></tr>'; return; }
-  tbody.innerHTML = r.data.map((u, i) => `
-    <tr>
-      <td>${i+1}</td>
-      <td style="font-weight:700">${u.full_name}</td>
-      <td>${u.username}</td>
-      <td>${u.role === 'admin' ? 'مدير' : 'إداري'}</td>
-      <td><button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id},'${u.full_name}')">🗑️</button></td>
-    </tr>`).join('');
+    const r = await apiGet('get_users');
+    const tbody = document.getElementById('usersTable');
+    if (!r.data?.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px">لا يوجد مستخدمون</td></tr>'; return; }
+    tbody.innerHTML = r.data.map((u, i) => '<tr><td>' + (i+1) + '</td><td>' + u.full_name + '</td><td>' + u.username + '</td><td>' + (u.role === 'admin' ? 'مدير' : 'إداري') + '</td><td><button class="btn btn-danger btn-sm" onclick="deleteUser(' + u.id + ',\'' + u.full_name + '\')">🗑️</button></td></tr>').join('');
 }
 
 async function addUser() {
-  const fd = new FormData();
-  fd.append('full_name', document.getElementById('userFullName').value.trim());
-  fd.append('username', document.getElementById('userUsername').value.trim());
-  fd.append('password', document.getElementById('userPassword').value);
-  fd.append('role', document.getElementById('userRole').value);
-  const r = await api('add_user', 'POST', fd);
-  if (r.success) { toast(r.message); closeModal('modalAddUser'); loadUsers(); } else toast(r.message, 'error');
+    const fd = new FormData();
+    fd.append('full_name', document.getElementById('userFullName').value.trim());
+    fd.append('username', document.getElementById('userUsername').value.trim());
+    fd.append('password', document.getElementById('userPassword').value);
+    fd.append('role', document.getElementById('userRole').value);
+    const r = await api('add_user', 'POST', fd);
+    if (r.success) { toast(r.message); closeModal('modalAddUser'); loadUsers(); } else toast(r.message, 'error');
 }
 
 async function deleteUser(id, name) {
-  if (!confirm(`حذف المستخدم ${name}؟`)) return;
-  const fd = new FormData(); fd.append('id', id);
-  const r = await api('delete_user', 'POST', fd);
-  if (r.success) { toast(r.message); loadUsers(); } else toast(r.message, 'error');
+    if (!confirm('حذف المستخدم ' + name + '؟')) return;
+    const fd = new FormData(); fd.append('id', id);
+    const r = await api('delete_user', 'POST', fd);
+    if (r.success) { toast(r.message); loadUsers(); } else toast(r.message, 'error');
 }
 
-// --- PRINTING LOGIC ---
 function createCardHTML(student) {
-    return `
-        <div class="id-card-wrapper">
-            <div class="id-card-header">بطاقة تعريف الطالب</div>
-            <div class="id-card-body">
-                <div class="id-card-info">
-                    <div class="student-field"><span class="student-label">اسم الطالب:</span><span class="student-value">${student.full_name}</span></div>
-                    <div class="student-field"><span class="student-label">الصف:</span><span class="student-value">${student.class_name}</span></div>
-                </div>
-                <div class="id-card-qr-box" id="qr-box-${student.id}"></div>
-            </div>
-            <div class="id-card-footer">${SITE_NAME} - الاستدعاء الذكي</div>
-        </div>`;
+    return '<div class="id-card-wrapper"><div class="id-card-header">بطاقة تعريف الطالب</div><div class="id-card-body"><div class="id-card-info"><div class="student-field"><span class="student-label">اسم الطالب:</span><span class="student-value">' + student.full_name + '</span></div><div class="student-field"><span class="student-label">الصف:</span><span class="student-value">' + student.class_name + '</span></div></div><div class="id-card-qr-box" id="qr-box-' + student.id + '"></div></div><div class="id-card-footer">' + SITE_NAME + ' - الاستدعاء الذكي</div></div>';
 }
 
 async function printSingleCard(studentId) {
     const student = allStudents.find(s => s.id == studentId);
-    if (!student) return;
-    openPrintWindow([student]);
+    if (student) openPrintWindow([student]);
 }
 
 async function printBulk(mode) {
     const classId = document.getElementById('filterClass').value;
     const students = mode === 'class' ? allStudents.filter(s => s.class_id == classId) : allStudents;
-    
-    if (students.length === 0) {
-        toast('لا يوجد طلاب لطباعتهم', 'error');
-        return;
-    }
+    if (students.length === 0) { toast('لا يوجد طلاب لطباعتهم', 'error'); return; }
     openPrintWindow(students);
 }
 
 function openPrintWindow(students) {
     const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-        alert('يرجى السماح بفتح النوافذ المنبثقة (Pop-ups) لتتمكن من الطباعة');
-        return;
-    }
-    
-    // Build the table structure for 6 cards per page
+    if (!printWindow) { alert('يرجى السماح بالنوافذ المنبثقة'); return; }
     let contentHtml = '';
     for (let i = 0; i < students.length; i += 6) {
         const chunk = students.slice(i, i + 6);
-        contentHtml += `<table class="bulk-print-table">`;
+        contentHtml += '<table class="bulk-print-table">';
         for (let j = 0; j < chunk.length; j += 2) {
-            contentHtml += `<tr>`;
-            contentHtml += `<td>${chunk[j] ? createCardHTML(chunk[j]) : ''}</td>`;
-            contentHtml += `<td>${chunk[j+1] ? createCardHTML(chunk[j+1]) : ''}</td>`;
-            contentHtml += `</tr>`;
+            contentHtml += '<tr><td>' + (chunk[j] ? createCardHTML(chunk[j]) : '') + '</td><td>' + (chunk[j+1] ? createCardHTML(chunk[j+1]) : '') + '</td></tr>';
         }
-        contentHtml += `</table>`;
-        if (i + 6 < students.length) {
-            contentHtml += `<div class="page-break"></div>`;
-        }
+        contentHtml += '</table>';
+        if (i + 6 < students.length) contentHtml += '<div class="page-break"></div>';
     }
-
     const currentStyles = Array.from(document.querySelectorAll('style')).map(s => s.innerHTML).join('\n');
-
-    printWindow.document.write(`
-        <html>
-        <head>
-            <title>طباعة بطاقات الطلاب - ${SITE_NAME}</title>
-            <style>
-                ${currentStyles}
-                body { background: white; padding: 10mm; margin: 0; direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-                .bulk-print-table { width: 100%; border-collapse: separate; border-spacing: 10mm; table-layout: fixed; }
-                .bulk-print-table td { vertical-align: top; width: 50%; padding: 0; }
-                .id-card-wrapper { margin: 0 auto; box-shadow: none; border: 1px solid #eee; }
-                .page-break { page-break-after: always; height: 1px; }
-                @media print {
-                    @page { size: A4 portrait; margin: 0; }
-                    body { padding: 10mm; }
-                    .id-card-wrapper { border: 1px solid #ddd; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                }
-            </style>
-        </head>
-        <body>
-            <div id="print-content">${contentHtml}</div>
-            <script src="${SITE_BASE}/assets/js/qrcode.min.js"></script>
-            <script>
-                function generateAllQRs() {
-                    const students = ${JSON.stringify(students)};
-                    students.forEach(s => {
-                        const el = document.getElementById('qr-box-' + s.id);
-                        if (el) {
-                            new QRCode(el, {
-                                text: '${SITE_BASE}/call.php?code=' + s.barcode,
-                                width: 72,
-                                height: 72,
-                                correctLevel: 1
-                            });
-                        }
-                    });
-                    
-                    // Wait for QRs to render before printing
-                    setTimeout(() => {
-                        window.print();
-                    }, 800);
-                }
-
-                // Check if QRCode library is loaded
-                if (typeof QRCode === 'undefined') {
-                    const script = document.querySelector('script[src*="qrcode"]');
-                    script.onload = generateAllQRs;
-                } else {
-                    generateAllQRs();
-                }
-            </script>
-        </body>
-        </html>
-    `);
+    printWindow.document.write('<html><head><title>Print</title><style>' + currentStyles + 'body{background:white;padding:10mm;margin:0;direction:rtl;}.bulk-print-table{width:100%;border-collapse:separate;border-spacing:10mm;table-layout:fixed;}.bulk-print-table td{vertical-align:top;width:50%;padding:0;}.id-card-wrapper{margin:0 auto;box-shadow:none;border:1px solid #eee;}.page-break{page-break-after:always;height:1px;}@media print{@page{size:A4 portrait;margin:0;}body{padding:10mm;}.id-card-wrapper{border:1px solid #ddd;-webkit-print-color-adjust:exact;}}</style></head><body><div id="print-content">' + contentHtml + '</div><script src="' + SITE_BASE + '/assets/js/qrcode.min.js"></script><script>function startPrint(){const students = ' + JSON.stringify(students) + ';students.forEach(s => {const el = document.getElementById("qr-box-" + s.id);if(el) new QRCode(el, {text:"' + SITE_BASE + '/call.php?code=" + s.barcode, width:72, height:72, correctLevel:1});});setTimeout(() => { window.print(); }, 800);}window.onload = () => { if(typeof QRCode === "undefined"){ document.querySelector("script").onload = startPrint; } else { startPrint(); } };</script></body></html>');
     printWindow.document.close();
 }
 
 window.downloadClassCards = () => printBulk('class');
 window.downloadAllCards = () => printBulk('all');
 
-// --- DASHBOARD & LOG ---
 async function loadDashboard() {
-  const r = await apiGet('get_today_log');
-  const body = document.getElementById('dashLogBody');
-  if (!r.success || !r.data.length) { body.innerHTML = '<div class="empty-state"><h3>لا توجد استدعاءات اليوم</h3></div>'; return; }
-  body.innerHTML = `<div class="table-wrap"><table><thead><tr><th>الوقت</th><th>الطالب</th><th>الصف</th></tr></thead><tbody>${r.data.slice(0,10).map(d => `<tr><td>${formatTime(d.call_time)}</td><td>${d.student_name}</td><td>${d.class_name}</td></tr>`).join('')}</tbody></table></div>`;
+    const r = await apiGet('get_today_log');
+    const body = document.getElementById('dashLogBody');
+    if (!r.success || !r.data.length) { body.innerHTML = '<div class="empty-state"><h3>لا توجد استدعاءات اليوم</h3></div>'; return; }
+    body.innerHTML = '<div class="table-wrap"><table><thead><tr><th>الوقت</th><th>الطالب</th><th>الصف</th></tr></thead><tbody>' + r.data.slice(0,10).map(d => '<tr><td>' + formatTime(d.call_time) + '</td><td>' + d.student_name + '</td><td>' + d.class_name + '</td></tr>').join('') + '</tbody></table></div>';
 }
 
 async function loadLog() {
-  const r = await apiGet('get_today_log');
-  const body = document.getElementById('logBody');
-  if (!r.data?.length) { body.innerHTML = '<div class="empty-state"><h3>السجل فارغ اليوم</h3></div>'; return; }
-  body.innerHTML = `<div class="table-wrap"><table><thead><tr><th>الوقت</th><th>الطالب</th><th>الصف</th><th>بواسطة</th></tr></thead><tbody>${r.data.map(d => `<tr><td>${formatTime(d.call_time)}</td><td>${d.student_name}</td><td>${d.class_name}</td><td>${d.called_by_name}</td></tr>`).join('')}</tbody></table></div>`;
+    const r = await apiGet('get_today_log');
+    const body = document.getElementById('logBody');
+    if (!r.data?.length) { body.innerHTML = '<div class="empty-state"><h3>السجل فارغ اليوم</h3></div>'; return; }
+    body.innerHTML = '<div class="table-wrap"><table><thead><tr><th>الوقت</th><th>الطالب</th><th>الصف</th><th>بواسطة</th></tr></thead><tbody>' + r.data.map(d => '<tr><td>' + formatTime(d.call_time) + '</td><td>' + d.student_name + '</td><td>' + d.class_name + '</td><td>' + d.called_by_name + '</td></tr>').join('') + '</tbody></table></div>';
 }
 
 async function resetCalls() {
-  if (!confirm("تصفير جميع الاستدعاءات؟")) return;
-  const r = await api('reset_calls', 'POST', new FormData());
-  if (r.success) { alert("تم تصفير الاستدعاءات بنجاح"); loadDashboard(); loadLog(); } else alert(r.message);
+    if (!confirm('تصفير جميع الاستدعاءات؟')) return;
+    const r = await api('reset_calls', 'POST', new FormData());
+    if (r.success) { alert('تم تصفير الاستدعاءات بنجاح'); loadDashboard(); loadLog(); } else alert(r.message);
 }
 
-// Rename Class
 function openRenameClass(id, name, grade) {
-  document.getElementById('renameClassId').value = id;
-  document.getElementById('renameClassName').value = name;
-  document.getElementById('renameClassGrade').value = grade;
-  openModal('modalRenameClass');
+    document.getElementById('renameClassId').value = id;
+    document.getElementById('renameClassName').value = name;
+    document.getElementById('renameClassGrade').value = grade;
+    openModal('modalRenameClass');
 }
 
 async function renameClass() {
-  const fd = new FormData(); fd.append('id', document.getElementById('renameClassId').value);
-  fd.append('name', document.getElementById('renameClassName').value.trim());
-  fd.append('grade', document.getElementById('renameClassGrade').value.trim());
-  const r = await api('rename_class', 'POST', fd);
-  if (r.success) { toast(r.message); closeModal('modalRenameClass'); loadClasses(); } else toast(r.message, 'error');
+    const fd = new FormData(); fd.append('id', document.getElementById('renameClassId').value);
+    fd.append('name', document.getElementById('renameClassName').value.trim());
+    fd.append('grade', document.getElementById('renameClassGrade').value.trim());
+    const r = await api('rename_class', 'POST', fd);
+    if (r.success) { toast(r.message); closeModal('modalRenameClass'); loadClasses(); } else toast(r.message, 'error');
 }
 
-// Start
+function formatTime(ts) {
+    if (!ts) return '—';
+    const d = new Date(ts);
+    return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+}
+
 initPage();
 </script>
 </body>
