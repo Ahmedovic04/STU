@@ -395,28 +395,32 @@ include '../includes/header.php';
         border-top: 1px solid #e2e8f0;
     }
     
-    /* Print Layout for Bulk (6 per A4) */
-    .bulk-print-page {
-        display: grid;
-        grid-template-columns: repeat(2, 3.37in);
-        grid-template-rows: repeat(3, 2.125in);
-        gap: 0.3in;
-        padding: 0.5in;
-        width: 210mm; /* A4 */
-        height: 297mm; /* A4 */
-        box-sizing: border-box;
-        margin: 0 auto;
+    /* Print Layout for Bulk (6 per A4) using Table for maximum compatibility */
+    .bulk-print-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0.2in;
         background: white;
-        justify-content: center;
-        align-content: start;
+    }
+    .bulk-print-table td {
+        vertical-align: top;
+        padding: 0;
+        width: 3.37in;
     }
     .page-break {
         page-break-after: always;
+        display: block;
+        height: 1px;
+    }
+    #print-area {
+        background: white;
+        padding: 20px;
+        min-height: 100vh;
     }
 </style>
 
 <!-- Hidden Container for PDF Generation -->
-<div id="print-area" style="position: fixed; top: 0; left: 0; width: 210mm; z-index: -1000; opacity: 0; pointer-events: none; background: white;"></div>
+<div id="print-area" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1000; opacity: 0; overflow: auto; background: white;"></div>
 
 <script src="../assets/js/common.js"></script>
 <script src="../assets/js/qrcode.min.js"></script>
@@ -695,59 +699,72 @@ async function printBulk(mode) {
         return;
     }
 
-    toast('جاري معالجة البطاقات... يرجى الانتظار');
+    toast('جاري تجهيز ملف PDF... يرجى عدم إغلاق الصفحة');
+    
     const printArea = document.getElementById('print-area');
     printArea.innerHTML = '';
-    
-    for (let i = 0; i < students.length; i += 6) {
-        const page = document.createElement('div');
-        page.className = 'bulk-print-page' + (i + 6 < students.length ? ' page-break' : '');
-        
-        const chunk = students.slice(i, i + 6);
-        chunk.forEach(s => {
-            const wrapper = document.createElement('div');
-            wrapper.innerHTML = createCardHTML(s);
-            page.appendChild(wrapper);
-        });
-        
-        printArea.appendChild(page);
-        
-        // Generate QRs specific to this page
-        chunk.forEach(s => {
-            const qrContainer = page.querySelector(`#qr-box-${s.id}`);
-            if (qrContainer) {
-                new QRCode(qrContainer, {
-                    text: `${SITE_BASE}/call.php?code=${s.barcode}`,
-                    width: 72,
-                    height: 72,
-                    correctLevel: QRCode.CorrectLevel.M
-                });
-            }
-        });
-    }
+    printArea.style.opacity = '1'; // Show temporarily
+    printArea.style.zIndex = '9999';
 
-    // Significant delay to ensure all canvas elements are rendered
-    await new Promise(r => setTimeout(r, 2500));
+    let html = '';
+    for (let i = 0; i < students.length; i += 6) {
+        const chunk = students.slice(i, i + 6);
+        html += `<table class="bulk-print-table">`;
+        for (let j = 0; j < chunk.length; j += 2) {
+            html += `<tr>`;
+            html += `<td>${createCardHTML(chunk[j])}</td>`;
+            if (chunk[j+1]) {
+                html += `<td>${createCardHTML(chunk[j+1])}</td>`;
+            } else {
+                html += `<td></td>`;
+            }
+            html += `</tr>`;
+        }
+        html += `</table>`;
+        if (i + 6 < students.length) {
+            html += `<div class="page-break"></div>`;
+        }
+    }
+    
+    printArea.innerHTML = html;
+
+    // Generate QR codes
+    students.forEach(s => {
+        const qrBox = printArea.querySelector(`#qr-box-${s.id}`);
+        if (qrBox) {
+            new QRCode(qrBox, {
+                text: `${SITE_BASE}/call.php?code=${s.barcode}`,
+                width: 72,
+                height: 72
+            });
+        }
+    });
+
+    // Wait for everything to be rendered
+    await new Promise(r => setTimeout(r, 3000));
 
     const opt = {
-        margin: 0,
+        margin: 0.2,
         filename: mode === 'class' ? 'بطاقات_الصف.pdf' : 'جميع_البطاقات.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
             scale: 2, 
-            useCORS: true, 
-            allowTaint: true,
-            logging: false
+            useCORS: true,
+            logging: true,
+            backgroundColor: '#ffffff'
         },
         jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
     };
 
     try {
         await html2pdf().set(opt).from(printArea).save();
-        toast('تم تحميل جميع البطاقات بنجاح ✅');
+        toast('تم التحميل بنجاح ✅');
     } catch (err) {
-        console.error('PDF Error:', err);
-        toast('حدث خطأ أثناء إنشاء الملف', 'error');
+        console.error('PDF Final Error:', err);
+        toast('خطأ في توليد الملف', 'error');
+    } finally {
+        printArea.style.opacity = '0';
+        printArea.style.zIndex = '-1000';
     }
 }
 
