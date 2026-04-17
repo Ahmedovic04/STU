@@ -296,6 +296,7 @@ include '../includes/header.php';
     </div>
   </div>
 </div>
+<div class="modal-overlay" id="modalAddUser">
   <div class="modal">
     <div class="modal-header"><h3>إضافة مستخدم</h3><button class="modal-close" onclick="closeModal('modalAddUser')">✕</button></div>
     <div class="modal-body">
