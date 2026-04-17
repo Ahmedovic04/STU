@@ -322,10 +322,10 @@ include '../includes/header.php';
 <div id="toast-container"></div>
 
 <script src="../assets/js/common.js"></script>
-<!-- QR Code Generator -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<!-- PDF Generation -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!-- QR Code Generator (local) -->
+<script src="../assets/js/qrcode.min.js"></script>
+<!-- PDF Generation (local) -->
+<script src="../assets/js/html2pdf.bundle.min.js"></script>
 <script>
 let allClasses = [];
 
