@@ -416,7 +416,7 @@ include '../includes/header.php';
 </style>
 
 <!-- Hidden Container for PDF Generation -->
-<div id="print-area" style="position: absolute; left: -9999px; top: -9999px;"></div>
+<div id="print-area" style="position: fixed; top: 0; left: 0; width: 210mm; z-index: -1000; opacity: 0; pointer-events: none; background: white;"></div>
 
 <script src="../assets/js/common.js"></script>
 <script src="../assets/js/qrcode.min.js"></script>
