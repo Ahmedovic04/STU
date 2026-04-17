@@ -620,8 +620,8 @@ function hideNotif() {
   document.getElementById('notifBar').classList.remove('show');
 }
 
-// ---- Auto refresh every 10 seconds ----
-setInterval(() => { if (selectedClassId) loadStudents(); }, 10000);
+// ---- Auto refresh every 1.5 seconds ----
+setInterval(() => { if (selectedClassId) loadStudents(); }, 1500);
 
 // Update call badge counts on class buttons every 30s
 async function refreshClassCounts() {
