@@ -420,7 +420,7 @@ include '../includes/header.php';
 </style>
 
 <!-- Hidden Container for PDF Generation -->
-<div id="print-area" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1000; opacity: 0; overflow: auto; background: white;"></div>
+<div id="print-area" style="position: absolute; top: 0; left: 0; width: 210mm; z-index: -1000; opacity: 0; background: white; overflow: visible;"></div>
 
 <script src="../assets/js/common.js"></script>
 <script src="../assets/js/qrcode.min.js"></script>
@@ -701,14 +701,18 @@ async function printBulk(mode) {
 
     toast('جاري تجهيز ملف PDF... يرجى عدم إغلاق الصفحة');
     
+    // Force scroll to top for better capturing
+    window.scrollTo(0, 0);
+
     const printArea = document.getElementById('print-area');
     printArea.innerHTML = '';
-    printArea.style.opacity = '1'; // Show temporarily
+    printArea.style.opacity = '1';
     printArea.style.zIndex = '9999';
 
     let html = '';
     for (let i = 0; i < students.length; i += 6) {
         const chunk = students.slice(i, i + 6);
+        html += `<div style="width: 210mm; padding: 10mm; background: white; margin: 0 auto;">`;
         html += `<table class="bulk-print-table">`;
         for (let j = 0; j < chunk.length; j += 2) {
             html += `<tr>`;
@@ -721,6 +725,7 @@ async function printBulk(mode) {
             html += `</tr>`;
         }
         html += `</table>`;
+        html += `</div>`;
         if (i + 6 < students.length) {
             html += `<div class="page-break"></div>`;
         }
@@ -735,23 +740,25 @@ async function printBulk(mode) {
             new QRCode(qrBox, {
                 text: `${SITE_BASE}/call.php?code=${s.barcode}`,
                 width: 72,
-                height: 72
+                height: 72,
+                correctLevel: QRCode.CorrectLevel.M
             });
         }
     });
 
-    // Wait for everything to be rendered
-    await new Promise(r => setTimeout(r, 3000));
+    // Wait for QRs and fonts
+    await new Promise(r => setTimeout(r, 4000));
 
     const opt = {
-        margin: 0.2,
+        margin: 0,
         filename: mode === 'class' ? 'بطاقات_الصف.pdf' : 'جميع_البطاقات.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
             scale: 2, 
             useCORS: true,
-            logging: true,
-            backgroundColor: '#ffffff'
+            logging: false,
+            scrollY: 0,
+            windowWidth: 1200
         },
         jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
     };
@@ -765,6 +772,7 @@ async function printBulk(mode) {
     } finally {
         printArea.style.opacity = '0';
         printArea.style.zIndex = '-1000';
+        printArea.innerHTML = '';
     }
 }
 
