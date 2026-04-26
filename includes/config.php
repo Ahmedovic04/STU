@@ -12,7 +12,10 @@ define('DB_CHARSET', 'utf8mb4');
 define('DB_PORT', getenv('MYSQLPORT') ?: '3306');
 
 define('SITE_NAME', 'مدرسة معيذر الابتدائية للبنين');
-define('SITE_URL', getenv('RAILWAY_PUBLIC_DOMAIN') ? 'https://'.getenv('RAILWAY_PUBLIC_DOMAIN') : 'http://localhost/school-dismissal');
+$default_url = (isset($_SERVER['HTTP_HOST'])) ? 
+               ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] : 
+               'http://localhost';
+define('SITE_URL', getenv('APP_URL') ?: (getenv('RAILWAY_PUBLIC_DOMAIN') ? 'https://'.getenv('RAILWAY_PUBLIC_DOMAIN') : $default_url));
 
 // =============================================
 // Database Connection (PDO)
