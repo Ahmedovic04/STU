@@ -27,11 +27,13 @@
     font-family: 'Tajawal', sans-serif;
     background: var(--bg-dark);
     min-height: 100vh;
+    width: 100%;
+    margin: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
-    overflow: hidden;
+    overflow-x: hidden;
   }
 
   /* Animated background */
@@ -346,8 +348,17 @@
   @keyframes spin { to { transform: rotate(360deg); } }
 
   @media (max-width: 480px) {
-    .login-card { padding: 28px 20px; border-radius: 16px; }
-    .school-title { font-size: 22px; }
+    .login-wrapper { padding: 15px; }
+    .login-card { padding: 24px 16px; border-radius: 20px; }
+    .school-title { font-size: 20px; }
+    .school-icon { width: 64px; height: 64px; font-size: 30px; }
+    .btn-login { font-size: 16px; padding: 14px; }
+    .role-tab { font-size: 13px; padding: 8px; }
+  }
+
+  @media (max-width: 360px) {
+    .school-title { font-size: 18px; }
+    .role-tabs { grid-template-columns: 1fr; }
   }
 </style>
 </head>

@@ -49,12 +49,14 @@ body {
   font-family: 'Tajawal', sans-serif;
   background: linear-gradient(135deg, #0f2238 0%, #1a3a5c 50%, #0f2238 100%);
   min-height: 100vh;
+  width: 100%;
+  margin: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 /* Animated background dots */
@@ -78,6 +80,13 @@ body::before {
   position: relative;
   z-index: 1;
   animation: slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  margin: auto;
+}
+
+@media (max-width: 480px) {
+  .card { padding: 30px 20px; border-radius: 20px; }
+  .student-name { font-size: 22px; }
+  .logo { width: 60px; height: 60px; font-size: 28px; }
 }
 
 @keyframes slideUp {
