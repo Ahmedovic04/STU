@@ -12,9 +12,10 @@ define('DB_CHARSET', 'utf8mb4');
 define('DB_PORT', getenv('MYSQLPORT') ?: '3306');
 
 define('SITE_NAME', 'مدرسة معيذر الابتدائية للبنين');
-$default_url = (isset($_SERVER['HTTP_HOST'])) ? 
-               ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] : 
-               'http://localhost';
+$is_https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
+             (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+$protocol = $is_https ? 'https://' : 'http://';
+$default_url = (isset($_SERVER['HTTP_HOST'])) ? $protocol . $_SERVER['HTTP_HOST'] : 'http://localhost';
 define('SITE_URL', getenv('APP_URL') ?: (getenv('RAILWAY_PUBLIC_DOMAIN') ? 'https://'.getenv('RAILWAY_PUBLIC_DOMAIN') : $default_url));
 
 // =============================================
