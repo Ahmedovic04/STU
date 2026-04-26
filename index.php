@@ -23,12 +23,17 @@
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
+  html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
   body {
     font-family: 'Tajawal', sans-serif;
     background: var(--bg-dark);
     min-height: 100vh;
-    width: 100%;
-    margin: 0;
     display: flex;
     align-items: center;
     justify-content: center;
