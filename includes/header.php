@@ -6,6 +6,14 @@
 <title><?= $pageTitle ?? 'نظام استدعاء الطلاب' ?></title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+<script>
+(function() {
+  const theme = localStorage.getItem('theme') || 'light';
+  if (theme === 'dark') {
+    document.documentElement.classList.add('dark-mode');
+  }
+})();
+</script>
 <style>
 :root {
   --primary: #1a3a5c;
@@ -35,6 +43,75 @@
   --header-h: 64px;
 }
 
+.dark-mode {
+  --bg: #0b0f19;
+  --bg-card: #111827;
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --border: #1f2937;
+  --shadow-sm: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-md: 0 12px 32px rgba(0,0,0,0.5);
+  --sidebar-bg: #030712;
+  --sidebar-text: #9ca3af;
+  --topbar-bg: #111827;
+  --primary-dark: #000;
+}
+
+/* Smooth transitions */
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.card, .sidebar, .topbar, .modal, .form-control, .btn, .stat-card, .user-card, .sidebar-logo {
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--text-main);
+  box-shadow: var(--shadow-sm);
+  padding: 0;
+}
+
+.theme-toggle:hover {
+  background: var(--border);
+  transform: rotate(15deg) scale(1.1);
+}
+
+.dark-mode .theme-toggle {
+  background: #1f2937;
+  border-color: #374151;
+  color: #f0a500;
+}
+
+.dark-mode .topbar {
+  background: var(--bg-card);
+}
+
+.dark-mode .nav-item:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+.dark-mode .form-control:focus {
+  background: #000;
+}
+
+.dark-mode .id-card-wrapper {
+    background: #fff;
+    color: #000;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -45,6 +122,10 @@ body {
   display: flex;
 }
 
+/* Re-include original styles from here */
+<?php
+// We include the rest of the styles here to keep header.php manageable
+?>
 /* ============ SIDEBAR ============ */
 .sidebar {
   width: var(--sidebar-w);
@@ -93,7 +174,6 @@ body {
   font-weight: 400;
 }
 
-/* Nav */
 .sidebar-nav {
   flex: 1;
   padding: 16px 12px;
@@ -139,7 +219,6 @@ body {
 
 .nav-icon { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
 
-/* Sidebar footer */
 .sidebar-footer {
   padding: 16px 12px;
   border-top: 1px solid rgba(255,255,255,0.06);
@@ -191,7 +270,6 @@ body {
 }
 .btn-logout:hover { background: rgba(231,76,60,0.2); }
 
-/* ============ MAIN ============ */
 .main-wrapper {
   margin-right: var(--sidebar-w);
   flex: 1;
@@ -252,7 +330,6 @@ body {
   width: 100%;
 }
 
-/* ============ CARDS ============ */
 .card {
   background: var(--bg-card);
   border-radius: var(--radius);
@@ -281,7 +358,6 @@ body {
 
 .card-body { padding: 24px; }
 
-/* ============ BUTTONS ============ */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -315,7 +391,6 @@ body {
 
 .btn-sm { padding: 6px 12px; font-size: 13px; border-radius: 8px; }
 
-/* ============ FORM CONTROLS ============ */
 .form-group { margin-bottom: 18px; }
 
 .form-label {
@@ -346,7 +421,6 @@ body {
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
-/* ============ TABLE ============ */
 .table-wrap { overflow-x: auto; }
 
 table {
@@ -377,7 +451,6 @@ tbody td {
 tbody tr:last-child td { border-bottom: none; }
 tbody tr:hover { background: rgba(240,165,0,0.03); }
 
-/* ============ BADGES ============ */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -393,7 +466,6 @@ tbody tr:hover { background: rgba(240,165,0,0.03); }
 .badge-called { background: var(--danger-soft); color: var(--danger); }
 .badge-free   { background: var(--success-soft); color: #1a8a4a; }
 
-/* ============ TOAST ============ */
 #toast-container {
   position: fixed;
   bottom: 24px;
@@ -427,7 +499,6 @@ tbody tr:hover { background: rgba(240,165,0,0.03); }
   to   { opacity: 1; transform: translateX(0); }
 }
 
-/* ============ MODAL ============ */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -483,7 +554,6 @@ tbody tr:hover { background: rgba(240,165,0,0.03); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* ============ STATS ============ */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -517,7 +587,6 @@ tbody tr:hover { background: rgba(240,165,0,0.03); }
 .stat-number { font-size: 28px; font-weight: 900; line-height: 1; color: var(--text-main); }
 .stat-label  { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
 
-/* ============ OVERLAY (mobile sidebar) ============ */
 .sidebar-overlay {
   display: none;
   position: fixed;
@@ -527,28 +596,15 @@ tbody tr:hover { background: rgba(240,165,0,0.03); }
   backdrop-filter: blur(2px);
 }
 
-/* ============ RESPONSIVE ============ */
 @media (max-width: 900px) {
   :root { --sidebar-w: 260px; }
-
-  .sidebar {
-    transform: translateX(100%);
-  }
-
-  .sidebar.open {
-    transform: translateX(0);
-  }
-
+  .sidebar { transform: translateX(100%); }
+  .sidebar.open { transform: translateX(0); }
   .sidebar-overlay.open { display: block; }
-
   .main-wrapper { margin-right: 0; }
-
   .hamburger { display: flex; }
-
   .page-content { padding: 20px 16px; }
-
   .topbar { padding: 0 16px; }
-
   .topbar-date { display: none; }
 }
 
@@ -558,7 +614,6 @@ tbody tr:hover { background: rgba(240,165,0,0.03); }
   .card-body   { padding: 16px; }
 }
 
-/* ============ EMPTY STATE ============ */
 .empty-state {
   text-align: center;
   padding: 60px 20px;
@@ -569,7 +624,6 @@ tbody tr:hover { background: rgba(240,165,0,0.03); }
 .empty-state h3   { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
 .empty-state p    { font-size: 14px; }
 
-/* ============ LOADING SKELETON ============ */
 .skeleton {
   background: linear-gradient(90deg, var(--bg) 25%, var(--border) 50%, var(--bg) 75%);
   background-size: 200% 100%;
@@ -582,7 +636,6 @@ tbody tr:hover { background: rgba(240,165,0,0.03); }
   to   { background-position: -200% 0; }
 }
 
-/* Pill select */
 .pill-grid {
   display: flex;
   flex-wrap: wrap;
@@ -605,5 +658,32 @@ tbody tr:hover { background: rgba(240,165,0,0.03); }
 .pill:hover { border-color: var(--accent); color: var(--accent); }
 .pill.active { background: var(--accent); border-color: var(--accent); color: #1a1a1a; box-shadow: 0 4px 12px var(--accent-glow); }
 </style>
+
+<script>
+function toggleTheme() {
+  const isDark = document.body.classList.toggle('dark-mode');
+  document.documentElement.classList.toggle('dark-mode');
+  const theme = isDark ? 'dark' : 'light';
+  localStorage.setItem('theme', theme);
+  updateThemeIcon(isDark);
+}
+
+function updateThemeIcon(isDark) {
+  const icon = document.getElementById('themeIcon');
+  if (icon) {
+    icon.textContent = isDark ? '☀️' : '🌙';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const theme = localStorage.getItem('theme') || 'light';
+  const isDark = theme === 'dark';
+  if (isDark) {
+    document.body.classList.add('dark-mode');
+    document.documentElement.classList.add('dark-mode');
+  }
+  updateThemeIcon(isDark);
+});
+</script>
 </head>
 <body>

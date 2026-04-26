@@ -377,6 +377,273 @@ body {
 .empty-icon  { font-size:64px; margin-bottom:16px; }
 .empty-state h3 { font-size:20px; font-weight:800; margin-bottom:8px; }
 
+/* ---- All Calls Panel ---- */
+.all-calls-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10,20,35,0.65);
+  backdrop-filter: blur(6px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: overlayIn 0.25s ease;
+}
+.all-calls-overlay.show { display: flex; }
+
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.all-calls-modal {
+  background: var(--bg-card);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 820px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.4);
+  animation: modalSlide 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  overflow: hidden;
+}
+
+@keyframes modalSlide {
+  from { opacity:0; transform: translateY(30px) scale(0.97); }
+  to   { opacity:1; transform: translateY(0) scale(1); }
+}
+
+.acm-header {
+  background: linear-gradient(135deg, var(--primary), #1e4976);
+  padding: 20px 24px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.acm-header-left { display: flex; align-items: center; gap: 14px; }
+
+.acm-icon {
+  width: 46px;
+  height: 46px;
+  background: linear-gradient(135deg, var(--accent), #e8940d);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(240,165,0,0.35);
+}
+
+.acm-title { font-size: 19px; font-weight: 800; }
+.acm-sub   { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 3px; }
+
+.acm-badge {
+  background: var(--accent);
+  color: #1a1a1a;
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 13px;
+  font-weight: 900;
+  min-width: 40px;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(240,165,0,0.35);
+}
+
+.acm-close-btn {
+  background: rgba(255,255,255,0.12);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 6px 10px;
+  transition: background 0.2s;
+  line-height: 1;
+}
+.acm-close-btn:hover { background: rgba(255,255,255,0.22); }
+
+.acm-toolbar {
+  padding: 12px 20px;
+  background: #f7f9fc;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.acm-search {
+  flex: 1;
+  min-width: 160px;
+  padding: 9px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-family: 'Tajawal', sans-serif;
+  font-size: 14px;
+  color: var(--text-main);
+  background: #fff;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.acm-search:focus { border-color: var(--accent); }
+
+.acm-live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--success);
+}
+
+.acm-live-dot {
+  width: 8px;
+  height: 8px;
+  background: #2ecc71;
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.acm-body {
+  overflow-y: auto;
+  flex: 1;
+  padding: 16px 20px 20px;
+}
+
+.acm-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.acm-table th {
+  background: #f0f4f9;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 10px 14px;
+  text-align: right;
+  border-bottom: 2px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.acm-table td {
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  vertical-align: middle;
+  transition: background 0.2s;
+}
+
+.acm-table tr:last-child td { border-bottom: none; }
+
+.acm-table tbody tr:hover td { background: rgba(240,165,0,0.04); }
+
+.acm-row-num {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  width: 32px;
+}
+
+.acm-student-name {
+  font-weight: 800;
+  color: var(--text-main);
+  font-size: 15px;
+}
+
+.acm-class-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(26,58,92,0.08);
+  color: var(--primary);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.acm-time {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+  direction: ltr;
+  text-align: left;
+}
+
+.acm-called-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 6px rgba(231,76,60,0.5);
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+
+.acm-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+
+.acm-empty-icon { font-size: 52px; margin-bottom: 14px; }
+.acm-empty h3   { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+.acm-empty p    { font-size: 14px; }
+
+/* Header toggle button */
+.btn-all-calls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(240,165,0,0.15);
+  border: 1.5px solid rgba(240,165,0,0.35);
+  color: var(--accent);
+  border-radius: 20px;
+  padding: 7px 16px;
+  font-family: 'Tajawal', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-all-calls:hover {
+  background: var(--accent);
+  color: #1a1a1a;
+  border-color: var(--accent);
+  box-shadow: 0 4px 14px rgba(240,165,0,0.3);
+}
+
+.btn-all-calls .bac-count {
+  background: var(--danger);
+  color: #fff;
+  border-radius: 12px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 900;
+  min-width: 20px;
+  text-align: center;
+  transition: background 0.2s;
+}
+.btn-all-calls:hover .bac-count {
+  background: #1a1a1a;
+  color: #fff;
+}
+
 /* Responsive */
 @media (max-width:768px) {
   .content { padding:16px; }
@@ -385,11 +652,13 @@ body {
   .top-header { padding:0 16px; }
   .header-title { font-size:15px; }
   .live-badge span { display:none; }
+  .btn-all-calls span:not(.bac-count) { display:none; }
 }
 
 @media (max-width:480px) {
   .student-list { grid-template-columns: 1fr; }
   .panel-header { flex-direction:column; align-items:flex-start; }
+  .acm-table th:nth-child(4), .acm-table td:nth-child(4) { display:none; }
 }
 </style>
 </head>
@@ -405,6 +674,11 @@ body {
     </div>
   </div>
   <div class="header-right">
+    <button class="btn-all-calls" id="btnAllCalls" onclick="openAllCallsPanel()" title="مشاهدة جميع الاستدعاءات بالمدرسة">
+      <span>🏫</span>
+      <span>جميع الاستدعاءات</span>
+      <span class="bac-count" id="allCallsHeaderCount">0</span>
+    </button>
     <div class="live-badge">
       <div class="live-dot"></div>
       <span>مباشر</span>
@@ -446,6 +720,47 @@ body {
   <span>🔔</span>
   <span id="notifText"></span>
   <button class="notif-close" onclick="hideNotif()">✕</button>
+</div>
+
+<!-- ============ ALL CALLS OVERLAY ============ -->
+<div class="all-calls-overlay" id="allCallsOverlay" onclick="handleOverlayClick(event)">
+  <div class="all-calls-modal">
+    <div class="acm-header">
+      <div class="acm-header-left">
+        <div class="acm-icon">🏫</div>
+        <div>
+          <div class="acm-title">جميع الاستدعاءات اليوم</div>
+          <div class="acm-sub" id="acmSubDate">جاري التحميل...</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="acm-badge" id="acmTotalBadge">0</div>
+        <button class="acm-close-btn" onclick="closeAllCallsPanel()" title="إغلاق">✕</button>
+      </div>
+    </div>
+    <div class="acm-toolbar">
+      <input class="acm-search" type="text" id="acmSearch" placeholder="🔍  ابحث باسم الطالب أو الصف..." oninput="filterAllCalls()">
+      <div class="acm-live-indicator">
+        <div class="acm-live-dot"></div>
+        <span>تحديث تلقائي</span>
+      </div>
+    </div>
+    <div class="acm-body">
+      <table class="acm-table" id="acmTable">
+        <thead>
+          <tr>
+            <th style="width:36px">#</th>
+            <th>اسم الطالب</th>
+            <th>الصف</th>
+            <th>وقت الاستدعاء</th>
+          </tr>
+        </thead>
+        <tbody id="acmTableBody">
+          <tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text-muted)">جاري التحميل...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -630,13 +945,102 @@ async function refreshClassCounts() {
   // Left as future enhancement
 }
 
+// ---- All Calls Panel ----
+let allCallsData = [];
+let allCallsPanelOpen = false;
+
+function openAllCallsPanel() {
+  allCallsPanelOpen = true;
+  document.getElementById('allCallsOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('acmSearch').value = '';
+  loadAllCalls();
+}
+
+function closeAllCallsPanel() {
+  allCallsPanelOpen = false;
+  document.getElementById('allCallsOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('allCallsOverlay')) closeAllCallsPanel();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && allCallsPanelOpen) closeAllCallsPanel();
+});
+
+async function loadAllCalls() {
+  try {
+    const r = await apiGet('get_today_all_calls');
+    allCallsData = r.data || [];
+
+    // Update header button count
+    document.getElementById('allCallsHeaderCount').textContent = allCallsData.length;
+
+    if (allCallsPanelOpen) renderAllCalls();
+  } catch(e) { /* silent */ }
+}
+
+function renderAllCalls() {
+  const query  = (document.getElementById('acmSearch').value || '').trim().toLowerCase();
+  const filtered = query
+    ? allCallsData.filter(d =>
+        d.student_name.toLowerCase().includes(query) ||
+        d.class_name.toLowerCase().includes(query)
+      )
+    : allCallsData;
+
+  // Update badge + sub date
+  document.getElementById('acmTotalBadge').textContent = filtered.length;
+  const today = new Date();
+  document.getElementById('acmSubDate').textContent =
+    today.toLocaleDateString('ar-SA', {weekday:'long', year:'numeric', month:'long', day:'numeric'})
+    + ' — ' + allCallsData.length + ' استدعاء';
+
+  const tbody = document.getElementById('acmTableBody');
+
+  if (!filtered.length) {
+    tbody.innerHTML = `
+      <tr><td colspan="4">
+        <div class="acm-empty">
+          <div class="acm-empty-icon">${query ? '🔍' : '📭'}</div>
+          <h3>${query ? 'لا توجد نتائج' : 'لا يوجد مستدعون اليوم'}</h3>
+          <p>${query ? 'جرّب كلمة بحث مختلفة' : 'لم يتم استدعاء أي طالب حتى الآن'}</p>
+        </div>
+      </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((d, i) => `
+    <tr>
+      <td class="acm-row-num">${i + 1}</td>
+      <td>
+        <div style="display:flex;align-items:center">
+          <span class="acm-called-dot"></span>
+          <span class="acm-student-name">${d.student_name}</span>
+        </div>
+      </td>
+      <td><span class="acm-class-badge">🏛️ ${d.class_name}</span></td>
+      <td class="acm-time">${formatTime(d.call_time)}</td>
+    </tr>`).join('');
+}
+
+function filterAllCalls() {
+  if (allCallsPanelOpen) renderAllCalls();
+}
+
+// Auto-refresh all calls every 5 seconds
+setInterval(loadAllCalls, 5000);
+
 // Init
-  // add now1
 loadClasses();
-  window.addEventListener('focus', () => {
+loadAllCalls();
+window.addEventListener('focus', () => {
   loadClasses();
   loadStudents();
-    //
+  loadAllCalls();
 });
 </script>
 </body>
