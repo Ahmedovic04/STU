@@ -39,6 +39,25 @@ if ($action === 'get_students') {
     jsonResponse(true, '', $stmt->fetchAll());
 }
 
+/* ================= TODAY ALL CALLS (PUBLIC) ================= */
+
+if ($action === 'get_today_all_calls') {
+    $stmt = $db->prepare("
+        SELECT dc.id as call_id, dc.call_time,
+               s.id as student_id, s.full_name as student_name,
+               c.name as class_name, c.grade,
+               u.full_name as called_by_name
+        FROM dismissal_calls dc
+        JOIN students s ON s.id = dc.student_id
+        JOIN classes c ON c.id = s.class_id
+        JOIN users u ON u.id = dc.called_by
+        WHERE dc.call_date = ?
+        ORDER BY dc.call_time DESC
+    ");
+    $stmt->execute([$today]);
+    jsonResponse(true, '', $stmt->fetchAll());
+}
+
 /* ================= ADMIN CHECK ================= */
 
 if (in_array($action, [
