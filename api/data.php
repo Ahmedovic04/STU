@@ -1,6 +1,6 @@
 <?php
 require_once '../includes/config.php';
-//autoResetCalls();
+autoResetCalls();
 startSecureSession();
 
 $action = $_GET['action'] ?? '';

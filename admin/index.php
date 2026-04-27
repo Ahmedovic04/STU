@@ -38,6 +38,7 @@ include '../includes/header.php';
     <a class="nav-item" onclick="showSection('card-settings')"><span class="nav-icon">📇</span> إعدادات البطاقة</a>
     <div class="nav-section-label" style="margin-top:16px">التقارير</div>
     <a class="nav-item" onclick="showSection('log')"><span class="nav-icon">📋</span> سجل اليوم</a>
+    <a class="nav-item" onclick="showSection('reports')"><span class="nav-icon">📄</span> تقارير مخصصة</a>
   </nav>
 
   <div class="sidebar-footer">
@@ -218,6 +219,33 @@ include '../includes/header.php';
             <h3 style="margin-bottom:20px;color:var(--primary)">👀 معاينة مباشرة</h3>
             <div id="card-preview-container"></div>
             <button class="btn btn-ghost btn-sm" style="margin-top:20px" onclick="updatePreview()">تحديث المعاينة</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== REPORTS ===== -->
+    <div id="section-reports" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <h2>📄 تقارير الاستدعاءات</h2>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;gap:15px;align-items:flex-end;margin-bottom:25px;flex-wrap:wrap;background:#f8fafc;padding:20px;border-radius:12px;border:1px solid var(--border)">
+            <div class="form-group" style="margin:0;flex:1;min-width:150px">
+              <label class="form-label">من تاريخ</label>
+              <input type="date" class="form-control" id="reportFrom" value="<?= date('Y-m-d') ?>">
+            </div>
+            <div class="form-group" style="margin:0;flex:1;min-width:150px">
+              <label class="form-label">إلى تاريخ</label>
+              <input type="date" class="form-control" id="reportTo" value="<?= date('Y-m-d') ?>">
+            </div>
+            <button class="btn btn-primary" style="height:46px" onclick="generateReport()">🔍 عرض التقرير</button>
+            <button class="btn btn-ghost" id="btnExportPDF" style="height:46px;display:none" onclick="exportReportPDF()">🖨️ تحميل PDF</button>
+          </div>
+
+          <div id="reportResultArea">
+            <div style="text-align:center;padding:40px;color:var(--text-muted)">اختر التاريخ واضغط على "عرض التقرير"</div>
           </div>
         </div>
       </div>
@@ -556,6 +584,7 @@ function showSection(name) {
     if (name === 'users')     loadUsers();
     if (name === 'log')       loadLog();
     if (name === 'card-settings') updatePreview();
+    if (name === 'reports')   { /* logic handled by button */ }
 }
 
 const sectionTitles = {
@@ -564,7 +593,8 @@ const sectionTitles = {
     students: 'إدارة الطلاب',
     users: 'إدارة المستخدمين',
     log: 'سجل الاستدعاءات',
-    'card-settings': 'إعدادات البطاقة'
+    'card-settings': 'إعدادات البطاقة',
+    reports: 'تقارير مخصصة'
 };
 
 async function loadClasses() {
@@ -820,6 +850,76 @@ async function renameClass() {
     fd.append('grade', document.getElementById('renameClassGrade').value.trim());
     const r = await api('rename_class', 'POST', fd);
     if (r.success) { toast(r.message); closeModal('modalRenameClass'); loadClasses(); } else toast(r.message, 'error');
+}
+
+async function generateReport() {
+    const from = document.getElementById('reportFrom').value;
+    const to = document.getElementById('reportTo').value;
+    if (!from || !to) { toast('يرجى تحديد التاريخ', 'error'); return; }
+    
+    const res = await apiGet('report', { from, to });
+    const area = document.getElementById('reportResultArea');
+    const btnPDF = document.getElementById('btnExportPDF');
+    
+    if (res.success && res.data.length > 0) {
+        btnPDF.style.display = 'inline-flex';
+        let html = `
+            <div id="report-print-content" style="padding:20px; direction:rtl; font-family:'Tajawal', sans-serif;">
+                <div style="text-align:center;margin-bottom:30px;border-bottom:2px solid #1a3a5c;padding-bottom:15px">
+                    <h1 style="color:#1a3a5c;margin-bottom:5px">${SITE_NAME}</h1>
+                    <h2 style="color:#666">تقرير استدعاءات الطلاب</h2>
+                    <p style="color:#888">الفترة من ${from} إلى ${to}</p>
+                </div>
+                <div class="table-wrap">
+                    <table style="width:100%;border-collapse:collapse">
+                        <thead>
+                            <tr style="background:#f1f5f9">
+                                <th style="padding:12px;border:1px solid #ddd">التاريخ</th>
+                                <th style="padding:12px;border:1px solid #ddd">الوقت</th>
+                                <th style="padding:12px;border:1px solid #ddd">الطالب</th>
+                                <th style="padding:12px;border:1px solid #ddd">الصف</th>
+                                <th style="padding:12px;border:1px solid #ddd">المستدعي</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${res.data.map(d => `
+                                <tr>
+                                    <td style="padding:10px;border:1px solid #ddd">${d.call_date}</td>
+                                    <td style="padding:10px;border:1px solid #ddd">${formatTime(d.call_time)}</td>
+                                    <td style="padding:10px;border:1px solid #ddd;font-weight:700">${d.student_name}</td>
+                                    <td style="padding:10px;border:1px solid #ddd">${d.class_name}</td>
+                                    <td style="padding:10px;border:1px solid #ddd">${d.called_by}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top:30px;text-align:left;font-size:12px;color:#999">
+                    تم استخراج التقرير في: ${new Date().toLocaleString('ar-SA')}
+                </div>
+            </div>
+        `;
+        area.innerHTML = html;
+    } else {
+        btnPDF.style.display = 'none';
+        area.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-muted)"><div style="font-size:48px;margin-bottom:15px">📭</div>لا توجد بيانات لهذه الفترة</div>';
+    }
+}
+
+async function exportReportPDF() {
+    const element = document.getElementById('report-print-content');
+    const from = document.getElementById('reportFrom').value;
+    const to = document.getElementById('reportTo').value;
+    
+    const opt = {
+        margin:       10,
+        filename:     `Report_${from}_to_${to}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save();
 }
 
 function formatTime(ts) {

@@ -128,8 +128,9 @@ function jsonResponse($success, $message = '', $data = []) {
 // Auto-reset: mark old calls from previous days
 // =============================================
 function cleanOldCalls() {
-    // Calls are filtered by date in queries - no deletion needed
-    // This keeps history but only shows today's calls
+    $db = getDB();
+    // مسح الاستدعاءات التي مر عليها أكثر من 15 يوم
+    $db->exec("DELETE FROM dismissal_calls WHERE call_date < DATE_SUB(CURRENT_DATE, INTERVAL 15 DAY)");
 }
 function autoResetCalls() {
     $db = getDB();
@@ -154,8 +155,8 @@ function autoResetCalls() {
     $last = new DateTime($row['last_reset']);
     $diff = $now->getTimestamp() - $last->getTimestamp();
 
-    if ($diff >= 18000) { // 5 ساعات
-        $db->exec("DELETE FROM dismissal_calls");
+    if ($diff >= 86400) { // كل 24 ساعة
+        cleanOldCalls();
         $db->prepare("UPDATE settings SET last_reset = NOW() WHERE id = 1")->execute();
     }
 }
