@@ -455,8 +455,12 @@ if ($action === 'reset_calls') {
 /* ================= CARD SETTINGS ================= */
 
 if ($action === 'get_card_settings') {
-    $stmt = $db->query("SELECT * FROM card_settings WHERE id = 1");
-    $settings = $stmt->fetch();
+    try {
+        $stmt = $db->query("SELECT * FROM card_settings WHERE id = 1");
+        $settings = $stmt->fetch();
+    } catch (PDOException $e) {
+        $settings = false;
+    }
     
     if (!$settings) {
         // Create default settings if not exists
