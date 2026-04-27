@@ -916,10 +916,44 @@ async function loadStudents() {
 }
 
 // ---- Notifications ----
+function playNotificationSound() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Create a pleasant notification sound (two notes)
+    const playNote = (freq, startTime, duration) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, startTime);
+      
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+      
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
+
+    const now = audioCtx.currentTime;
+    playNote(880, now, 0.4);      // A5
+    playNote(1108.73, now + 0.1, 0.5); // C#6
+  } catch (e) {
+    console.error("Audio error:", e);
+  }
+}
+
 function showNotif(text) {
   document.getElementById('notifText').textContent = text;
   const bar = document.getElementById('notifBar');
   bar.classList.add('show');
+  
+  playNotificationSound();
+  
   clearTimeout(window._notifTimer);
   window._notifTimer = setTimeout(hideNotif, 6000);
 }
