@@ -427,10 +427,15 @@ require_once 'includes/config.php';
 startSecureSession();
 if (isLoggedIn()) {
     $u = currentUser();
-    if ($u['role'] === 'admin') {
-        header('Location: admin/index.php');
+    $redirect = $_GET['redirect'] ?? '';
+    if ($redirect) {
+        header('Location: ' . $redirect);
     } else {
-        header('Location: management/index.php');
+        if ($u['role'] === 'admin') {
+            header('Location: admin/index.php');
+        } else {
+            header('Location: management/index.php');
+        }
     }
     exit;
 }
@@ -469,7 +474,9 @@ async function doLogin(e) {
     const data = await res.json();
 
     if (data.success) {
-      window.location.href = data.data?.redirect || '/';
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirect = urlParams.get('redirect');
+      window.location.href = redirect || data.data?.redirect || '/';
     } else {
       alert.textContent = data.message || 'بيانات غير صحيحة';
       alert.classList.add('show');

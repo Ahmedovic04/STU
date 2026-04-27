@@ -3,7 +3,7 @@ require_once 'includes/config.php';
 startSecureSession();
 
 if (!isLoggedIn()) {
-    header('Location: index.php');
+    header('Location: index.php?redirect=' . urlencode($_SERVER['REQUEST_URI']));
     exit;
 }
 
