@@ -452,6 +452,48 @@ if ($action === 'reset_calls') {
     $db->exec("DELETE FROM dismissal_calls");
     jsonResponse(true, 'تم التصفير');
 }
+/* ================= CARD SETTINGS ================= */
+
+if ($action === 'get_card_settings') {
+    $stmt = $db->query("SELECT * FROM card_settings WHERE id = 1");
+    $settings = $stmt->fetch();
+    
+    if (!$settings) {
+        // Create default settings if not exists
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS card_settings (
+                id INT PRIMARY KEY DEFAULT 1,
+                font_size INT DEFAULT 11,
+                card_width FLOAT DEFAULT 3.37,
+                card_height FLOAT DEFAULT 2.125,
+                barcode_size INT DEFAULT 80
+            ) ENGINE=InnoDB
+        ");
+        $db->exec("INSERT IGNORE INTO card_settings (id, font_size, card_width, card_height, barcode_size) VALUES (1, 11, 3.37, 2.125, 80)");
+        $settings = $db->query("SELECT * FROM card_settings WHERE id = 1")->fetch();
+    }
+    
+    jsonResponse(true, '', $settings);
+}
+
+if ($action === 'update_card_settings') {
+    requireAdmin();
+    
+    $fontSize    = intval($_POST['font_size'] ?? 11);
+    $cardWidth   = floatval($_POST['card_width'] ?? 3.37);
+    $cardHeight  = floatval($_POST['card_height'] ?? 2.125);
+    $barcodeSize = intval($_POST['barcode_size'] ?? 80);
+    
+    $stmt = $db->prepare("
+        UPDATE card_settings 
+        SET font_size = ?, card_width = ?, card_height = ?, barcode_size = ? 
+        WHERE id = 1
+    ");
+    $stmt->execute([$fontSize, $cardWidth, $cardHeight, $barcodeSize]);
+    
+    jsonResponse(true, 'تم حفظ إعدادات البطاقة بنجاح');
+}
+
 /* ================= DEFAULT ================= */
 
 jsonResponse(false, 'طلب غير معروف');

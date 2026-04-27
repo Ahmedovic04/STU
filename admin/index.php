@@ -35,6 +35,7 @@ include '../includes/header.php';
     <a class="nav-item" onclick="showSection('classes')"><span class="nav-icon">🏛️</span> الصفوف</a>
     <a class="nav-item" onclick="showSection('students')"><span class="nav-icon">👨‍🎓</span> الطلاب</a>
     <a class="nav-item" onclick="showSection('users')"><span class="nav-icon">👥</span> المستخدمون</a>
+    <a class="nav-item" onclick="showSection('card-settings')"><span class="nav-icon">📇</span> إعدادات البطاقة</a>
     <div class="nav-section-label" style="margin-top:16px">التقارير</div>
     <a class="nav-item" onclick="showSection('log')"><span class="nav-icon">📋</span> سجل اليوم</a>
   </nav>
@@ -179,6 +180,46 @@ include '../includes/header.php';
           <button class="btn btn-danger btn-sm" onclick="resetCalls()" style="display:flex;align-items:center;gap:6px">🧹 تصفير الاستدعاءات</button>
         </div>
         <div class="card-body" id="logBody">جاري التحميل...</div>
+      </div>
+    </div>
+
+    <!-- ===== CARD SETTINGS ===== -->
+    <div id="section-card-settings" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <h2>📇 إعدادات بطاقة الطالب</h2>
+          <button class="btn btn-accent" onclick="saveCardSettings()">💾 حفظ الإعدادات</button>
+        </div>
+        <div class="card-body">
+          <div class="settings-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:20px">
+            <div class="form-group">
+              <label class="form-label">حجم الخط الأساسي (pt)</label>
+              <input type="number" class="form-control" id="set-font-size" value="11">
+              <small style="color:var(--text-muted)">القيمة الافتراضية: 11</small>
+            </div>
+            <div class="form-group">
+              <label class="form-label">عرض البطاقة (بوصة - inch)</label>
+              <input type="number" step="0.01" class="form-control" id="set-card-width" value="3.37">
+              <small style="color:var(--text-muted)">القياسي: 3.37</small>
+            </div>
+            <div class="form-group">
+              <label class="form-label">ارتفاع البطاقة (بوصة - inch)</label>
+              <input type="number" step="0.01" class="form-control" id="set-card-height" value="2.125">
+              <small style="color:var(--text-muted)">القياسي: 2.125</small>
+            </div>
+            <div class="form-group">
+              <label class="form-label">حجم الباركود (px)</label>
+              <input type="number" class="form-control" id="set-barcode-size" value="80">
+              <small style="color:var(--text-muted)">الافتراضي: 80</small>
+            </div>
+          </div>
+          
+          <div class="preview-area" style="margin-top:40px;padding:20px;background:#f0f4f9;border-radius:12px;text-align:center">
+            <h3 style="margin-bottom:20px;color:var(--primary)">👀 معاينة مباشرة</h3>
+            <div id="card-preview-container"></div>
+            <button class="btn btn-ghost btn-sm" style="margin-top:20px" onclick="updatePreview()">تحديث المعاينة</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -406,6 +447,12 @@ include '../includes/header.php';
 <script>
 let allClasses = [];
 let allStudents = [];
+let cardSettings = {
+    font_size: 11,
+    card_width: 3.37,
+    card_height: 2.125,
+    barcode_size: 80
+};
 const SITE_BASE = window.location.origin;
 const SITE_NAME = '<?= SITE_NAME ?>';
 
@@ -417,6 +464,10 @@ async function initPage() {
 
 async function loadInitialData() {
     try {
+        const settingsRes = await apiGet('get_card_settings');
+        if (settingsRes.success) cardSettings = settingsRes.data;
+        applySettingsToUI();
+
         const classesRes = await apiGet('get_classes');
         allClasses = classesRes.data || [];
         const studentsRes = await apiGet('get_all_students');
@@ -426,6 +477,51 @@ async function loadInitialData() {
         loadDashboard();
     } catch (e) {
         console.error("Init Error:", e);
+    }
+}
+
+function applySettingsToUI() {
+    document.getElementById('set-font-size').value = cardSettings.font_size;
+    document.getElementById('set-card-width').value = cardSettings.card_width;
+    document.getElementById('set-card-height').value = cardSettings.card_height;
+    document.getElementById('set-barcode-size').value = cardSettings.barcode_size;
+}
+
+async function saveCardSettings() {
+    const fd = new FormData();
+    fd.append('font_size', document.getElementById('set-font-size').value);
+    fd.append('card_width', document.getElementById('set-card-width').value);
+    fd.append('card_height', document.getElementById('set-card-height').value);
+    fd.append('barcode_size', document.getElementById('set-barcode-size').value);
+    
+    const r = await api('update_card_settings', 'POST', fd);
+    if (r.success) {
+        toast(r.message);
+        cardSettings = {
+            font_size: parseInt(document.getElementById('set-font-size').value),
+            card_width: parseFloat(document.getElementById('set-card-width').value),
+            card_height: parseFloat(document.getElementById('set-card-height').value),
+            barcode_size: parseInt(document.getElementById('set-barcode-size').value)
+        };
+        updatePreview();
+    } else {
+        toast(r.message, 'error');
+    }
+}
+
+function updatePreview() {
+    const container = document.getElementById('card-preview-container');
+    const dummyStudent = { id: 'preview', full_name: 'اسم الطالب التجريبي', class_name: 'الصف التجريبي', barcode: 'test' };
+    container.innerHTML = createCardHTML(dummyStudent);
+    
+    const qrBox = document.getElementById('qr-box-preview');
+    if (qrBox) {
+        new QRCode(qrBox, {
+            text: SITE_BASE + '/call.php?code=test',
+            width: cardSettings.barcode_size - 10,
+            height: cardSettings.barcode_size - 10,
+            correctLevel: 1
+        });
     }
 }
 
@@ -451,6 +547,7 @@ function showSection(name) {
     if (name === 'students')  loadInitialData();
     if (name === 'users')     loadUsers();
     if (name === 'log')       loadLog();
+    if (name === 'card-settings') updatePreview();
 }
 
 const sectionTitles = {
@@ -458,7 +555,8 @@ const sectionTitles = {
     classes: 'إدارة الصفوف',
     students: 'إدارة الطلاب',
     users: 'إدارة المستخدمين',
-    log: 'سجل الاستدعاءات'
+    log: 'سجل الاستدعاءات',
+    'card-settings': 'إعدادات البطاقة'
 };
 
 async function loadClasses() {
@@ -601,7 +699,30 @@ async function deleteUser(id, name) {
 }
 
 function createCardHTML(student) {
-    return '<div class="id-card-wrapper"><div class="id-card-header">بطاقة تعريف الطالب</div><div class="id-card-body"><div class="id-card-info"><div class="student-field"><span class="student-label">اسم الطالب:</span><span class="student-value">' + student.full_name + '</span></div><div class="student-field"><span class="student-label">الصف:</span><span class="student-value">' + student.class_name + '</span></div></div><div class="id-card-qr-box" id="qr-box-' + student.id + '"></div></div><div class="id-card-footer">' + SITE_NAME + ' - الاستدعاء الذكي</div></div>';
+    const s = cardSettings;
+    const style = `width:${s.card_width}in; height:${s.card_height}in;`;
+    const bodyStyle = `padding: ${s.card_height * 5}px ${s.card_width * 5}px;`;
+    const fontStyle = `font-size:${s.font_size}pt;`;
+    const qrStyle = `width:${s.barcode_size}px; height:${s.barcode_size}px;`;
+
+    return `
+        <div class="id-card-wrapper" style="${style}">
+            <div class="id-card-header" style="font-size: ${s.font_size + 2}pt">بطاقة تعريف الطالب</div>
+            <div class="id-card-body" style="${bodyStyle}">
+                <div class="id-card-info">
+                    <div class="student-field">
+                        <span class="student-label" style="font-size: ${s.font_size - 3}pt">اسم الطالب:</span>
+                        <span class="student-value" style="${fontStyle}">${student.full_name}</span>
+                    </div>
+                    <div class="student-field">
+                        <span class="student-label" style="font-size: ${s.font_size - 3}pt">الصف:</span>
+                        <span class="student-value" style="${fontStyle}">${student.class_name}</span>
+                    </div>
+                </div>
+                <div class="id-card-qr-box" id="qr-box-${student.id}" style="${qrStyle}"></div>
+            </div>
+            <div class="id-card-footer" style="font-size: ${s.font_size - 3}pt">${SITE_NAME} - الاستدعاء الذكي</div>
+        </div>`;
 }
 
 async function printSingleCard(studentId) {
@@ -646,7 +767,7 @@ function openPrintWindow(students) {
         '  const students = ' + JSON.stringify(students) + ';' +
         '  students.forEach(s => {' +
         '    const el = document.getElementById("qr-box-" + s.id);' +
-        '    if(el) new QRCode(el, {text:"' + SITE_BASE + '/call.php?code=" + s.barcode, width:72, height:72, correctLevel:1});' +
+        '    if(el) new QRCode(el, {text:"' + SITE_BASE + '/call.php?code=" + s.barcode, width:' + (cardSettings.barcode_size - 8) + ', height:' + (cardSettings.barcode_size - 8) + ', correctLevel:1});' +
         '  });' +
         '  setTimeout(() => { window.print(); }, 800);' +
         '}' +
