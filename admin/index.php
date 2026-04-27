@@ -22,6 +22,7 @@ include '../includes/header.php';
 <!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sidebar-logo">
+    <button class="sidebar-close" onclick="toggleSidebar()">✕</button>
     <div class="logo-icon">🏫</div>
     <div>
       <div class="logo-text">مدرسة معيذر</div>
@@ -405,15 +406,6 @@ include '../includes/header.php';
         margin: 0 auto;
         color: #000;
         box-sizing: border-box;
-    }
-    .id-card-header {
-        background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-        color: white;
-        padding: 6px;
-        text-align: center;
-        font-weight: bold;
-        font-size: 11pt;
-        border-bottom: 2px solid #fbbf24;
     }
     .id-card-body {
         flex: 1;

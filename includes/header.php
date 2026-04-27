@@ -139,7 +139,26 @@ body {
   flex-direction: column;
   transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
   box-shadow: -4px 0 24px rgba(0,0,0,0.3);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
+
+.sidebar-close {
+  display: none;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 8px;
+  transition: background 0.2s;
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 101;
+}
+.sidebar-close:hover { background: rgba(255,255,255,0.2); }
 
 .sidebar-logo {
   padding: 24px 20px;
@@ -603,6 +622,7 @@ tbody tr:hover { background: rgba(240,165,0,0.03); }
   .sidebar-overlay.open { display: block; }
   .main-wrapper { margin-right: 0; }
   .hamburger { display: flex; }
+  .sidebar-close { display: block; }
   .page-content { padding: 20px 16px; }
   .topbar { padding: 0 16px; }
   .topbar-date { display: none; }
