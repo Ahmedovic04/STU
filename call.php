@@ -2,6 +2,11 @@
 require_once 'includes/config.php';
 startSecureSession();
 
+if (!isLoggedIn()) {
+    header('Location: index.php');
+    exit;
+}
+
 $code = trim($_GET['code'] ?? '');
 $pageTitle = 'استدعاء الطالب - ' . SITE_NAME;
 

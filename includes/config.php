@@ -45,9 +45,29 @@ function getDB() {
 // =============================================
 // Session & Auth Helpers
 // =============================================
+define('SESSION_TIMEOUT', 2400); // 40 minutes in seconds
+
 function startSecureSession() {
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
+    }
+    
+    // Check for session timeout
+    if (isset($_SESSION['last_activity'])) {
+        $elapsed = time() - $_SESSION['last_activity'];
+        if ($elapsed > SESSION_TIMEOUT) {
+            session_unset();
+            session_destroy();
+            // Start a new session if needed, but the user is now logged out
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+        }
+    }
+    
+    // Update last activity time
+    if (isset($_SESSION['user_id'])) {
+        $_SESSION['last_activity'] = time();
     }
 }
 

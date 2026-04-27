@@ -353,6 +353,10 @@ if ($action === 'bulk_import_students') {
 /* ================= BARCODE PUBLIC CALL ================= */
 
 if ($action === 'call_by_barcode') {
+    if (!isLoggedIn()) {
+        jsonResponse(false, 'يرجى تسجيل الدخول أولاً');
+    }
+
     $code = trim($_GET['code'] ?? $_POST['code'] ?? '');
     if (empty($code)) jsonResponse(false, 'رمز غير صالح');
 
@@ -368,9 +372,9 @@ if ($action === 'call_by_barcode') {
 
     if (!$student) jsonResponse(false, 'الطالب غير موجود');
 
-    // Get barcode_system user id
-    $sysUser = $db->query("SELECT id FROM users WHERE username = 'barcode_system' LIMIT 1")->fetch();
-    $callerId = $sysUser ? $sysUser['id'] : 1;
+    // Use current logged-in user
+    $user = currentUser();
+    $callerId = $user['id'];
 
     // Check if already called today
     $check = $db->prepare("SELECT id FROM dismissal_calls WHERE student_id=? AND call_date=?");

@@ -32,6 +32,7 @@ if ($action === 'login') {
     $_SESSION['username']  = $user['username'];
     $_SESSION['full_name'] = $user['full_name'];
     $_SESSION['role']      = $user['role'];
+    $_SESSION['last_activity'] = time();
 
     // ✅ الحل هنا (روابط نسبية بدون SITE_URL)
     $redirect = ($user['role'] === 'admin') 
