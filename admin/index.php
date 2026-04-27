@@ -510,6 +510,14 @@ async function saveCardSettings() {
 }
 
 function updatePreview() {
+    // تحديث الإعدادات محلياً من المدخلات لرؤية المعاينة قبل الحفظ
+    cardSettings = {
+        font_size: parseInt(document.getElementById('set-font-size').value) || 11,
+        card_width: parseFloat(document.getElementById('set-card-width').value) || 3.37,
+        card_height: parseFloat(document.getElementById('set-card-height').value) || 2.125,
+        barcode_size: parseInt(document.getElementById('set-barcode-size').value) || 80
+    };
+
     const container = document.getElementById('card-preview-container');
     const dummyStudent = { id: 'preview', full_name: 'اسم الطالب التجريبي', class_name: 'الصف التجريبي', barcode: 'test' };
     container.innerHTML = createCardHTML(dummyStudent);
