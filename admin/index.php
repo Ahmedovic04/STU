@@ -864,31 +864,31 @@ async function generateReport() {
     if (res.success && res.data.length > 0) {
         btnPDF.style.display = 'inline-flex';
         let html = `
-            <div id="report-print-content" style="padding:20px; direction:rtl; font-family:'Tajawal', sans-serif;">
+            <div id="report-print-content" style="padding:20px; direction:rtl; text-align:right; font-family:'Tajawal', sans-serif; letter-spacing:0;">
                 <div style="text-align:center;margin-bottom:30px;border-bottom:2px solid #1a3a5c;padding-bottom:15px">
                     <h1 style="color:#1a3a5c;margin-bottom:5px">${SITE_NAME}</h1>
                     <h2 style="color:#666">تقرير استدعاءات الطلاب</h2>
                     <p style="color:#888">الفترة من ${from} إلى ${to}</p>
                 </div>
                 <div class="table-wrap">
-                    <table style="width:100%;border-collapse:collapse">
+                    <table style="width:100%;border-collapse:collapse; direction:rtl; text-align:right;">
                         <thead>
                             <tr style="background:#f1f5f9">
-                                <th style="padding:12px;border:1px solid #ddd">التاريخ</th>
-                                <th style="padding:12px;border:1px solid #ddd">الوقت</th>
-                                <th style="padding:12px;border:1px solid #ddd">الطالب</th>
-                                <th style="padding:12px;border:1px solid #ddd">الصف</th>
-                                <th style="padding:12px;border:1px solid #ddd">المستدعي</th>
+                                <td style="padding:12px;border:1px solid #ddd;font-weight:bold;text-align:right">التاريخ</td>
+                                <td style="padding:12px;border:1px solid #ddd;font-weight:bold;text-align:right">الوقت</td>
+                                <td style="padding:12px;border:1px solid #ddd;font-weight:bold;text-align:right">اسم الطالب</td>
+                                <td style="padding:12px;border:1px solid #ddd;font-weight:bold;text-align:right">الصف</td>
+                                <td style="padding:12px;border:1px solid #ddd;font-weight:bold;text-align:right">المستدعي</td>
                             </tr>
                         </thead>
                         <tbody>
                             ${res.data.map(d => `
                                 <tr>
-                                    <td style="padding:10px;border:1px solid #ddd">${d.call_date}</td>
-                                    <td style="padding:10px;border:1px solid #ddd">${formatTime(d.call_time)}</td>
-                                    <td style="padding:10px;border:1px solid #ddd;font-weight:700">${d.student_name}</td>
-                                    <td style="padding:10px;border:1px solid #ddd">${d.class_name}</td>
-                                    <td style="padding:10px;border:1px solid #ddd">${d.called_by}</td>
+                                    <td style="padding:10px;border:1px solid #ddd;text-align:right">${d.call_date}</td>
+                                    <td style="padding:10px;border:1px solid #ddd;text-align:right">${formatTime(d.call_time)}</td>
+                                    <td style="padding:10px;border:1px solid #ddd;text-align:right;font-weight:700">${d.student_name}</td>
+                                    <td style="padding:10px;border:1px solid #ddd;text-align:right">${d.class_name}</td>
+                                    <td style="padding:10px;border:1px solid #ddd;text-align:right">${d.called_by}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
