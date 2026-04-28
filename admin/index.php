@@ -401,18 +401,28 @@ include '../includes/header.php';
         display: flex;
         flex-direction: column;
         direction: rtl;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        border: 1px solid #ddd;
+        font-family: 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        border: 1px solid #e2e8f0;
         margin: 0 auto;
         color: #000;
         box-sizing: border-box;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .id-card-header {
+        text-align: center;
+        padding: 12px 5px 8px;
+        color: #1a3a5c;
+        font-weight: 900;
+        border-bottom: 1px solid #f1f5f9;
+        background: #fff;
+        width: 100%;
     }
     .id-card-body {
         flex: 1;
         display: flex;
-        padding: 8px 12px;
+        padding: 10px 15px;
         align-items: center;
-        gap: 12px;
+        gap: 15px;
     }
     .id-card-info {
         flex: 1;
@@ -422,12 +432,13 @@ include '../includes/header.php';
         overflow: hidden;
     }
     .student-field {
-        margin-bottom: 4px;
+        margin-bottom: 6px;
     }
     .student-label {
         font-size: 8pt;
         color: #64748b;
         display: block;
+        margin-bottom: 2px;
     }
     .student-value {
         font-size: 11pt;
@@ -446,14 +457,15 @@ include '../includes/header.php';
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
+        border-radius: 4px;
     }
     .id-card-footer {
-        background: #f8fafc;
-        padding: 4px;
+        background: #fff;
+        padding: 6px;
         text-align: center;
         font-size: 8pt;
         color: #94a3b8;
-        border-top: 1px solid #e2e8f0;
+        border-top: 1px solid #f1f5f9;
     }
 </style>
 
