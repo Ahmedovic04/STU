@@ -17,7 +17,7 @@ $error = null;
 if ($code) {
     $db = getDB();
     $stmt = $db->prepare("
-        SELECT s.id, s.full_name, c.name as class_name
+        SELECT s.id, s.full_name, s.student_number, c.name as class_name
         FROM students s
         JOIN classes c ON c.id = s.class_id
         WHERE s.barcode = ?
@@ -291,6 +291,7 @@ body::before {
     <div class="success-icon" id="resultIcon">✅</div>
     <div class="student-name" id="studentName"><?= htmlspecialchars($student['full_name']) ?></div>
     <div class="student-class" id="studentClass">🏛️ الصف: <?= htmlspecialchars($student['class_name']) ?></div>
+    <div class="student-class" id="studentNum" style="background: rgba(26,58,92,0.08); color: var(--primary); margin-right: 8px">🆔 الرقم: <?= htmlspecialchars($student['student_number'] ?? '—') ?></div>
     <div class="status-msg status-called" id="statusMsg"></div>
     <div class="call-time" id="callTime"></div>
     <a href="/index.php" class="btn-home">🏠 الصفحة الرئيسية</a>
