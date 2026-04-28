@@ -7,6 +7,21 @@ $action = $_GET['action'] ?? '';
 $db = getDB();
 $today = date('Y-m-d');
 
+/* ================= HELPERS ================= */
+function generateBarcodeFromNumber($num) {
+    // Generate a fixed 16-char hex string based on the student number
+    return substr(md5("STU_SECURE_SALT_" . $num), 0, 16);
+}
+
+function generateRandomStudentNumber($db) {
+    do {
+        $num = rand(10000000, 99999999);
+        $stmt = $db->prepare("SELECT id FROM students WHERE student_number = ?");
+        $stmt->execute([$num]);
+    } while ($stmt->fetch());
+    return (string)$num;
+}
+
 /* ================= PUBLIC ================= */
 
 if ($action === 'get_classes') {
@@ -124,8 +139,13 @@ if ($action === 'add_student') {
     if (empty($name) || !$classId)
         jsonResponse(false, 'الاسم والصف مطلوبان');
 
-    // Generate a unique barcode
-    $barcode = bin2hex(random_bytes(8));
+    // If student number is empty, generate a random one
+    if (empty($number)) {
+        $number = generateRandomStudentNumber($db);
+    }
+
+    // Generate persistent barcode based on student number
+    $barcode = generateBarcodeFromNumber($number);
 
     $stmt = $db->prepare("
         INSERT INTO students (full_name, class_id, student_number, barcode)
@@ -134,7 +154,7 @@ if ($action === 'add_student') {
 
     $stmt->execute([$name, $classId, $number, $barcode]);
 
-    jsonResponse(true, 'تم إضافة الطالب');
+    jsonResponse(true, 'تم إضافة الطالب بنجاح ورقم الطالب هو: ' . $number);
 }
 
 if ($action === 'delete_student') {
@@ -155,15 +175,23 @@ if ($action === 'update_student') {
     if (!$id || empty($name) || !$classId)
         jsonResponse(false, 'بيانات ناقصة');
 
+    // If number is empty, generate one
+    if (empty($number)) {
+        $number = generateRandomStudentNumber($db);
+    }
+
+    // Regenerate barcode based on number
+    $barcode = generateBarcodeFromNumber($number);
+
     $stmt = $db->prepare("
         UPDATE students 
-        SET full_name=?, class_id=?, student_number=? 
+        SET full_name=?, class_id=?, student_number=?, barcode=? 
         WHERE id=?
     ");
 
-    $stmt->execute([$name, $classId, $number, $id]);
+    $stmt->execute([$name, $classId, $number, $barcode, $id]);
 
-    jsonResponse(true, 'تم تعديل بيانات الطالب');
+    jsonResponse(true, 'تم تعديل بيانات الطالب بنجاح');
 }
 
 /* ================= MANAGEMENT ================= */
@@ -322,11 +350,6 @@ if ($action === 'bulk_import_students') {
     $inserted = 0;
     $skipped = 0;
 
-    $stmt = $db->prepare("
-        INSERT INTO students (full_name, class_id, barcode)
-        VALUES (?,?,?)
-    ");
-
     foreach ($lines as $line) {
         $name = preg_replace('/^[\d٠-٩]+[\.\-\)\s]+/u', '', trim($line));
         $name = trim($name);
@@ -337,8 +360,13 @@ if ($action === 'bulk_import_students') {
         }
 
         try {
-            $barcode = bin2hex(random_bytes(8));
-            $stmt->execute([$name, $classId, $barcode]);
+            $number = generateRandomStudentNumber($db);
+            $barcode = generateBarcodeFromNumber($number);
+            $stmt = $db->prepare("
+                INSERT INTO students (full_name, class_id, student_number, barcode)
+                VALUES (?,?,?,?)
+            ");
+            $stmt->execute([$name, $classId, $number, $barcode]);
             $inserted++;
         } catch (Exception $e) {
             $skipped++;
