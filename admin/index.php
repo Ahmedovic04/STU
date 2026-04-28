@@ -759,6 +759,10 @@ function createCardHTML(student) {
                         <span class="student-label" style="font-size: ${s.font_size - 3}pt">الصف:</span>
                         <span class="student-value" style="${fontStyle}">${student.class_name}</span>
                     </div>
+                    <div class="student-field">
+                        <span class="student-label" style="font-size: ${s.font_size - 3}pt">رقم الطالب:</span>
+                        <span class="student-value" style="${fontStyle}">${student.student_number || '—'}</span>
+                    </div>
                 </div>
                 <div class="id-card-qr-box" id="qr-box-${student.id}" style="${qrStyle}"></div>
             </div>
