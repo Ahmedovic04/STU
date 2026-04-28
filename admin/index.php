@@ -411,10 +411,9 @@ include '../includes/header.php';
     .id-card-header {
         text-align: center;
         padding: 12px 5px 8px;
-        color: #1a3a5c;
+        color: #fff;
         font-weight: 900;
-        border-bottom: 1px solid #f1f5f9;
-        background: #fff;
+        background: #1a3a5c;
         width: 100%;
     }
     .id-card-body {
@@ -460,12 +459,12 @@ include '../includes/header.php';
         border-radius: 4px;
     }
     .id-card-footer {
-        background: #fff;
-        padding: 6px;
+        background: #1a3a5c;
+        padding: 8px;
         text-align: center;
         font-size: 8pt;
-        color: #94a3b8;
-        border-top: 1px solid #f1f5f9;
+        color: #fff;
+        font-weight: 600;
     }
 </style>
 
