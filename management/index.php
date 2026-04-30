@@ -5,6 +5,8 @@ $user = currentUser();
 $pageTitle = 'واجهة الإدارة - ' . SITE_NAME;
 include '../includes/header.php';
 ?>
+<!-- QR Scanner Library -->
+<script src="https://unpkg.com/html5-qrcode"></script>
 
 <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
@@ -53,7 +55,12 @@ include '../includes/header.php';
 
       <!-- Step 1: Choose class -->
       <div class="card" style="margin-bottom:20px">
-        <div class="card-header"><h2>1️⃣ اختر الصف</h2></div>
+        <div class="card-header" style="display:flex; justify-content: space-between; align-items: center;">
+          <h2>1️⃣ اختر الصف</h2>
+          <button class="btn btn-primary" onclick="openScanner()" style="display:flex; align-items:center; gap:8px">
+            📸 فتح الكاميرا
+          </button>
+        </div>
         <div class="card-body">
           <div class="pill-grid" id="classPills">
             <div class="skeleton" style="width:80px;height:36px;border-radius:20px"></div>
@@ -94,6 +101,25 @@ include '../includes/header.php';
 </div>
 
 <div id="toast-container"></div>
+
+<!-- QR Scanner Modal -->
+<div class="modal-overlay" id="modalScanner">
+  <div class="modal" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3>📸 ماسح الباركود السريع</h3>
+      <button class="modal-close" onclick="stopScanner()">✕</button>
+    </div>
+    <div class="modal-body" style="padding: 10px;">
+      <div id="reader" style="width: 100%; border-radius: 12px; overflow: hidden; background: #000;"></div>
+      <div id="scan-result" style="margin-top: 15px; text-align: center; font-weight: 700; color: var(--primary);">
+        ضع الباركود أمام الكاميرا للاستدعاء التلقائي
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="stopScanner()">إغلاق الكاميرا</button>
+    </div>
+  </div>
+</div>
 
 <style>
 /* Student grid for management */
@@ -353,6 +379,72 @@ async function loadLog() {
 
 // Auto-refresh students every 30s
 setInterval(() => { if (currentClassId) loadStudents(); }, 30000);
+
+// QR Scanner Logic
+let html5QrCode = null;
+let lastScannedCode = null;
+let scanCooldown = false;
+
+async function openScanner() {
+  openModal('modalScanner');
+  if (!html5QrCode) {
+    html5QrCode = new Html5Qrcode("reader");
+  }
+  
+  const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+  
+  try {
+    await html5QrCode.start(
+      { facingMode: "environment" }, 
+      config, 
+      onScanSuccess
+    );
+  } catch (err) {
+    console.error("Camera Error:", err);
+    toast("تعذر فتح الكاميرا، تأكد من منح الصلاحيات", "error");
+    closeModal('modalScanner');
+  }
+}
+
+async function stopScanner() {
+  if (html5QrCode && html5QrCode.isScanning) {
+    await html5QrCode.stop();
+  }
+  closeModal('modalScanner');
+}
+
+async function onScanSuccess(decodedText) {
+  if (scanCooldown && decodedText === lastScannedCode) return;
+  
+  // Extract code from URL if needed
+  let code = decodedText;
+  if (decodedText.includes('code=')) {
+    const url = new URL(decodedText);
+    code = url.searchParams.get('code');
+  }
+  
+  lastScannedCode = decodedText;
+  scanCooldown = true;
+  setTimeout(() => { scanCooldown = false; }, 3000); // 3 seconds cooldown for same code
+
+  // Call student
+  const resultArea = document.getElementById('scan-result');
+  resultArea.innerHTML = '<span style="color:var(--accent)">⏳ جاري الاستدعاء...</span>';
+  
+  try {
+    const r = await apiGet('call_by_barcode', { code: code });
+    if (r.success) {
+      toast(`✅ تم استدعاء الطالب: ${r.data.student}`);
+      resultArea.innerHTML = `<span style="color:var(--success)">✅ تم استدعاء: ${r.data.student}</span>`;
+      if (typeof loadStudents === 'function') loadStudents();
+    } else {
+      toast(r.message, 'error');
+      resultArea.innerHTML = `<span style="color:var(--danger)">❌ ${r.message}</span>`;
+    }
+  } catch (e) {
+    toast("خطأ في الاتصال", "error");
+  }
+}
 
 // Init
 loadClasses();
