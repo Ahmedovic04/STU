@@ -512,6 +512,7 @@ tbody tr:hover { background: rgba(240,165,0,0.03); }
 
 .toast.toast-success { background: #1a5c35; border-left: 4px solid var(--success); }
 .toast.toast-error   { background: #5c1a1a; border-left: 4px solid var(--danger); }
+.toast.toast-warning { background: #5c4a1a; border-left: 4px solid var(--accent); }
 
 @keyframes toastIn {
   from { opacity: 0; transform: translateX(-20px); }

@@ -173,7 +173,12 @@ function toast(msg, type = 'success') {
 
   const el = document.createElement('div');
   el.className = `toast toast-${type}`;
-  el.innerHTML = `${type === 'success' ? '✅' : '❌'} ${msg}`;
+  
+  let icon = '✅';
+  if (type === 'error') icon = '❌';
+  if (type === 'warning') icon = '⚠️';
+  
+  el.innerHTML = `${icon} ${msg}`;
 
   container.appendChild(el);
 

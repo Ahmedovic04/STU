@@ -434,8 +434,13 @@ async function onScanSuccess(decodedText) {
   try {
     const r = await apiGet('call_by_barcode', { code: code });
     if (r.success) {
-      toast(`✅ تم استدعاء الطالب: ${r.data.student}`);
-      resultArea.innerHTML = `<span style="color:var(--success)">✅ تم استدعاء: ${r.data.student}</span>`;
+      if (r.data.status === 'already_called') {
+        toast(`⚠️ الطالب مستدعى مسبقاً: ${r.data.student}`, 'warning');
+        resultArea.innerHTML = `<span style="color:var(--accent)">⚠️ ${r.data.student} مستدعى مسبقاً</span>`;
+      } else {
+        toast(`✅ تم استدعاء الطالب: ${r.data.student}`);
+        resultArea.innerHTML = `<span style="color:var(--success)">✅ تم استدعاء: ${r.data.student}</span>`;
+      }
       if (typeof loadStudents === 'function') loadStudents();
     } else {
       toast(r.message, 'error');
