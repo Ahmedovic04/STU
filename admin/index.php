@@ -140,10 +140,15 @@ include '../includes/header.php';
           </div>
         </div>
         <div class="card-body">
-          <div class="form-group" style="max-width:280px">
-            <select class="form-control" id="filterClass" onchange="onFilterClassChange()">
-              <option value="">— جميع الصفوف —</option>
-            </select>
+          <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+            <div class="form-group" style="max-width:280px;margin-bottom:0;flex:1">
+              <input type="text" class="form-control" id="searchStudent" placeholder="🔍 بحث بالاسم، الرقم، أو الصف..." oninput="loadStudentsAdmin()">
+            </div>
+            <div class="form-group" style="max-width:200px;margin-bottom:0;flex:1">
+              <select class="form-control" id="filterClass" onchange="onFilterClassChange()">
+                <option value="">— جميع الصفوف —</option>
+              </select>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
@@ -640,13 +645,30 @@ async function deleteClass(id, name) {
 
 function loadStudentsAdmin() {
     const classId = document.getElementById('filterClass').value;
+    const search  = document.getElementById('searchStudent').value.trim().toLowerCase();
     const tbody = document.getElementById('studentsTable');
     tbody.innerHTML = '';
-    const filtered = classId ? allStudents.filter(s => s.class_id == classId) : allStudents;
+    
+    let filtered = allStudents;
+    
+    // Filter by class
+    if (classId) {
+        filtered = filtered.filter(s => s.class_id == classId);
+    }
+    
+    // Filter by search term
+    if (search) {
+        filtered = filtered.filter(s => 
+            s.full_name.toLowerCase().includes(search) || 
+            (s.student_number && s.student_number.toLowerCase().includes(search)) ||
+            (s.class_name && s.class_name.toLowerCase().includes(search))
+        );
+    }
+
     const btnBulkClass = document.getElementById('btnDownloadClassCards');
     if (btnBulkClass) btnBulkClass.style.display = classId ? 'inline-flex' : 'none';
     if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px">لا يوجد طلاب</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px">لا يوجد طلاب يطابقون البحث</td></tr>';
         return;
     }
     filtered.forEach((s, i) => {

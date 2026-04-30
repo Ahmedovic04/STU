@@ -139,6 +139,15 @@ if ($action === 'add_student') {
     if (empty($name) || !$classId)
         jsonResponse(false, 'الاسم والصف مطلوبان');
 
+    // Check if student number already exists
+    if (!empty($number)) {
+        $checkNum = $db->prepare("SELECT id FROM students WHERE student_number = ?");
+        $checkNum->execute([$number]);
+        if ($checkNum->fetch()) {
+            jsonResponse(false, 'هذا الطالب موجود بالفعل (رقم الطالب مسجل مسبقاً)');
+        }
+    }
+
     // If student number is empty, generate a random one
     if (empty($number)) {
         $number = generateRandomStudentNumber($db);
