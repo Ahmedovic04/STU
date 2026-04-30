@@ -409,7 +409,7 @@ if ($action === 'call_by_barcode') {
     $check->execute([$student['id'], $today]);
 
     if ($check->fetch()) {
-        jsonResponse(true, 'الطالب مستدعى مسبقاً اليوم', [
+        jsonResponse(false, 'الطالب مستدعى مسبقاً اليوم', [
             'status'     => 'already_called',
             'student'    => $student['full_name'],
             'class_name' => $student['class_name']

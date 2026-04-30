@@ -433,8 +433,8 @@ async function onScanSuccess(decodedText) {
   
   try {
     const r = await apiGet('call_by_barcode', { code: code });
-    if (r.success) {
-      if (r.data.status === 'already_called') {
+    if (r.success || (r.data && r.data.status === 'already_called')) {
+      if (r.data && r.data.status === 'already_called') {
         toast(`⚠️ الطالب مستدعى مسبقاً: ${r.data.student}`, 'warning');
         resultArea.innerHTML = `<span style="color:var(--accent)">⚠️ ${r.data.student} مستدعى مسبقاً</span>`;
       } else {

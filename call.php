@@ -318,13 +318,13 @@ body::before {
 
       document.getElementById('state-loading').classList.remove('active');
 
-      if (data.success) {
+      if (data.success || (data.data && data.data.status === 'already_called')) {
         const icon    = document.getElementById('resultIcon');
         const msgEl   = document.getElementById('statusMsg');
         const timeEl  = document.getElementById('callTime');
         const success = document.getElementById('state-success');
 
-        if (data.data.status === 'already_called') {
+        if (data.data && data.data.status === 'already_called') {
           icon.className = 'success-icon already-icon';
           icon.textContent = '⚠️';
           msgEl.className = 'status-msg status-already';
