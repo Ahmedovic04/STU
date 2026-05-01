@@ -131,6 +131,28 @@ if ($action === 'delete_class') {
     jsonResponse(true, 'تم حذف الصف وجميع طلابه');
 }
 
+if ($action === 'bulk_delete_classes') {
+    requireAdmin();
+    $ids = $_POST['ids'] ?? [];
+    if (empty($ids)) jsonResponse(false, 'لم يتم تحديد صفوف');
+    
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $db->prepare("DELETE FROM classes WHERE id IN ($placeholders)");
+    $stmt->execute($ids);
+    jsonResponse(true, 'تم حذف الصفوف المحددة');
+}
+
+if ($action === 'bulk_delete_students') {
+    requireAdmin();
+    $ids = $_POST['ids'] ?? [];
+    if (empty($ids)) jsonResponse(false, 'لم يتم تحديد طلاب');
+    
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $db->prepare("DELETE FROM students WHERE id IN ($placeholders)");
+    $stmt->execute($ids);
+    jsonResponse(true, 'تم حذف الطلاب المحددين');
+}
+
 if ($action === 'add_student') {
     $name    = trim($_POST['full_name'] ?? '');
     $classId = intval($_POST['class_id'] ?? 0);

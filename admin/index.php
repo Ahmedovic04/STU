@@ -118,9 +118,21 @@ include '../includes/header.php';
         </div>
         <div class="card-body">
           <div class="table-wrap">
+            <div style="margin-bottom:10px;display:flex;gap:10px">
+              <button class="btn btn-danger btn-sm" id="btnBulkDeleteClasses" onclick="bulkDeleteClasses()" style="display:none">🗑️ حذف المحدد</button>
+            </div>
             <table>
-              <thead><tr><th>#</th><th>اسم الصف</th><th>المرحلة</th><th>عدد الطلاب</th><th>الإجراءات</th></tr></thead>
-              <tbody id="classesTable"><tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">جاري التحميل...</td></tr></tbody>
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="selectAllClasses" onclick="toggleSelectAll('classes')"></th>
+                  <th>#</th>
+                  <th>اسم الصف</th>
+                  <th>المرحلة</th>
+                  <th>عدد الطلاب</th>
+                  <th>الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="classesTable"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">جاري التحميل...</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -150,11 +162,27 @@ include '../includes/header.php';
               </select>
             </div>
           </div>
-          <div class="table-wrap">
+            <div style="margin-bottom:10px;display:flex;gap:10px;justify-content:space-between;align-items:center">
+              <button class="btn btn-danger btn-sm" id="btnBulkDeleteStudents" onclick="bulkDeleteStudents()" style="display:none">🗑️ حذف المحدد</button>
+              <div id="paginationInfo" style="font-size:13px;color:var(--text-muted)"></div>
+            </div>
             <table>
-              <thead><tr><th>#</th><th>اسم الطالب</th><th>الرقم</th><th>الصف</th><th>الإجراءات</th></tr></thead>
-              <tbody id="studentsTable"><tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">جاري التحميل...</td></tr></tbody>
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="selectAllStudents" onclick="toggleSelectAll('students')"></th>
+                  <th>#</th>
+                  <th>اسم الطالب</th>
+                  <th>الرقم</th>
+                  <th>الصف</th>
+                  <th>الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="studentsTable"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">جاري التحميل...</td></tr></tbody>
             </table>
+          </div>
+          <div style="margin-top:20px;display:flex;justify-content:center;gap:10px">
+            <button class="btn btn-ghost" id="btnPrevPage" onclick="prevPage()">السابق</button>
+            <button class="btn btn-ghost" id="btnNextPage" onclick="nextPage()">التالي</button>
           </div>
         </div>
       </div>
@@ -483,6 +511,8 @@ include '../includes/header.php';
 <script>
 let allClasses = [];
 let allStudents = [];
+let currentStudentPage = 1;
+const pageSize = 20;
 let cardSettings = {
     font_size: 11,
     card_width: 3.37,
@@ -546,7 +576,6 @@ async function saveCardSettings() {
 }
 
 function updatePreview() {
-    // تحديث الإعدادات محلياً من المدخلات لرؤية المعاينة قبل الحفظ
     cardSettings = {
         font_size: parseInt(document.getElementById('set-font-size').value) || 11,
         card_width: parseFloat(document.getElementById('set-card-width').value) || 3.37,
@@ -609,22 +638,26 @@ async function loadClasses() {
     const r = await apiGet('get_classes');
     allClasses = r.data || [];
     const tbody = document.getElementById('classesTable');
-    if (!allClasses.length) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px">لا توجد صفوف</td></tr>';
+    tbody.innerHTML = '';
+    if (allClasses.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px">لا توجد صفوف</td></tr>';
         return;
     }
-    tbody.innerHTML = allClasses.map((c, i) => {
-        return '<tr>' +
-               '<td>' + (i+1) + '</td>' +
-               '<td>' + c.name + '</td>' +
-               '<td>' + (c.grade || '—') + '</td>' +
-               '<td>' + (c.student_count || 0) + '</td>' +
-               '<td>' +
-                 '<button class="btn btn-ghost btn-sm" onclick="openRenameClass(' + c.id + ',\'' + c.name.replace(/'/g, "\\'") + '\',\'' + (c.grade || '').replace(/'/g, "\\'") + '\')">✏️</button>' +
-                 '<button class="btn btn-danger btn-sm" onclick="deleteClass(' + c.id + ',\'' + c.name + '\')">🗑️</button>' +
-               '</td>' +
-               '</tr>';
-    }).join('');
+    allClasses.forEach((c, i) => {
+        tbody.innerHTML += `<tr>
+            <td><input type="checkbox" class="check-class" value="${c.id}" onclick="updateBulkBtn('classes')"></td>
+            <td>${i+1}</td>
+            <td style="font-weight:600">${c.name}</td>
+            <td>${c.grade || '—'}</td>
+            <td><span class="badge badge-admin">${c.student_count} طالب</span></td>
+            <td style="display:flex;gap:6px">
+                <button class="btn btn-ghost btn-sm" onclick="openRenameClass(${c.id}, '${c.name.replace(/'/g, "\\'")}', '${(c.grade||'').replace(/'/g, "\\'")}')">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteClass(${c.id}, '${c.name}')">🗑️</button>
+            </td>
+        </tr>`;
+    });
+    document.getElementById('selectAllClasses').checked = false;
+    updateBulkBtn('classes');
 }
 
 async function addClass() {
@@ -651,12 +684,7 @@ function loadStudentsAdmin() {
     
     let filtered = allStudents;
     
-    // Filter by class
-    if (classId) {
-        filtered = filtered.filter(s => s.class_id == classId);
-    }
-    
-    // Filter by search term
+    if (classId) filtered = filtered.filter(s => s.class_id == classId);
     if (search) {
         filtered = filtered.filter(s => 
             s.full_name.toLowerCase().includes(search) || 
@@ -665,23 +693,89 @@ function loadStudentsAdmin() {
         );
     }
 
+    // Pagination
+    const total = filtered.length;
+    const totalPages = Math.ceil(total / pageSize) || 1;
+    if (currentStudentPage > totalPages) currentStudentPage = totalPages;
+    if (currentStudentPage < 1) currentStudentPage = 1;
+
+    const start = (currentStudentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const pageData = filtered.slice(start, end);
+
+    document.getElementById('paginationInfo').textContent = `صفحة ${currentStudentPage} من ${totalPages} (إجمالي ${total} طالب)`;
+    document.getElementById('btnPrevPage').disabled = currentStudentPage === 1;
+    document.getElementById('btnNextPage').disabled = currentStudentPage === totalPages;
+
     const btnBulkClass = document.getElementById('btnDownloadClassCards');
     if (btnBulkClass) btnBulkClass.style.display = classId ? 'inline-flex' : 'none';
-    if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px">لا يوجد طلاب يطابقون البحث</td></tr>';
+
+    if (pageData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px">لا يوجد طلاب يطابقون البحث</td></tr>';
         return;
     }
-    filtered.forEach((s, i) => {
-        tbody.innerHTML += '<tr><td>' + (i+1) + '</td><td>' + s.full_name + '</td><td>' + (s.student_number || '—') + '</td>' +
-            '<td><span class="badge badge-admin">' + s.class_name + '</span></td>' +
-            '<td style="display:flex;gap:6px">' +
-            '<button class="btn btn-ghost btn-sm" onclick="printSingleCard(' + s.id + ')">🖨️</button>' +
-            '<button class="btn btn-ghost btn-sm" onclick="editStudent(' + s.id + ',\'' + s.full_name.replace(/'/g, "\\'") + '\',' + s.class_id + ',\'' + (s.student_number || '') + '\')">✏️</button>' +
-            '<button class="btn btn-danger btn-sm" onclick="deleteStudent(' + s.id + ',\'' + s.full_name + '\')">🗑️</button></td></tr>';
+
+    pageData.forEach((s, i) => {
+        tbody.innerHTML += `<tr>
+            <td><input type="checkbox" class="check-student" value="${s.id}" onclick="updateBulkBtn('students')"></td>
+            <td>${start + i + 1}</td>
+            <td>${s.full_name}</td>
+            <td>${s.student_number || '—'}</td>
+            <td><span class="badge badge-admin">${s.class_name}</span></td>
+            <td style="display:flex;gap:6px">
+                <button class="btn btn-ghost btn-sm" onclick="printSingleCard(${s.id})">🖨️</button>
+                <button class="btn btn-ghost btn-sm" onclick="editStudent(${s.id},'${s.full_name.replace(/'/g, "\\'")}',${s.class_id},'${(s.student_number || '')}')">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteStudent(${s.id},'${s.full_name}')">🗑️</button>
+            </td>
+        </tr>`;
     });
+    document.getElementById('selectAllStudents').checked = false;
+    updateBulkBtn('students');
 }
 
-function onFilterClassChange() { loadStudentsAdmin(); }
+function prevPage() { if (currentStudentPage > 1) { currentStudentPage--; loadStudentsAdmin(); } }
+function nextPage() { currentStudentPage++; loadStudentsAdmin(); }
+
+function toggleSelectAll(type) {
+    const master = document.getElementById(type === 'classes' ? 'selectAllClasses' : 'selectAllStudents');
+    const items = document.querySelectorAll(type === 'classes' ? '.check-class' : '.check-student');
+    items.forEach(item => item.checked = master.checked);
+    updateBulkBtn(type);
+}
+
+function updateBulkBtn(type) {
+    const checked = document.querySelectorAll(type === 'classes' ? '.check-class:checked' : '.check-student:checked');
+    const btn = document.getElementById(type === 'classes' ? 'btnBulkDeleteClasses' : 'btnBulkDeleteStudents');
+    btn.style.display = checked.length > 0 ? 'inline-block' : 'none';
+}
+
+async function bulkDeleteClasses() {
+    const checked = document.querySelectorAll('.check-class:checked');
+    if (checked.length === 0) return;
+    if (!confirm(`هل أنت متأكد من حذف ${checked.length} صف؟ سيتم حذف جميع طلابهم أيضاً!`)) return;
+    
+    const ids = Array.from(checked).map(c => c.value);
+    const fd = new FormData();
+    ids.forEach(id => fd.append('ids[]', id));
+    
+    const r = await api('bulk_delete_classes', 'POST', fd);
+    if (r.success) { toast(r.message); loadInitialData(); } else toast(r.message, 'error');
+}
+
+async function bulkDeleteStudents() {
+    const checked = document.querySelectorAll('.check-student:checked');
+    if (checked.length === 0) return;
+    if (!confirm(`هل أنت متأكد من حذف ${checked.length} طالب؟`)) return;
+    
+    const ids = Array.from(checked).map(c => c.value);
+    const fd = new FormData();
+    ids.forEach(id => fd.append('ids[]', id));
+    
+    const r = await api('bulk_delete_students', 'POST', fd);
+    if (r.success) { toast(r.message); loadInitialData(); } else toast(r.message, 'error');
+}
+
+function onFilterClassChange() { currentStudentPage = 1; loadStudentsAdmin(); }
 
 async function addStudent() {
     const name = document.getElementById('studentName').value.trim();
