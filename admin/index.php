@@ -148,6 +148,7 @@ include '../includes/header.php';
             <button class="btn btn-ghost" onclick="openBulkImport()">📋 استيراد قائمة</button>
             <button class="btn btn-ghost" id="btnDownloadClassCards" onclick="downloadClassCards()" style="display:none">🖨️ طباعة بطاقات الصف</button>
             <button class="btn btn-ghost" onclick="downloadAllCards()">📄 تحميل جميع البطاقات PDF</button>
+            <button class="btn btn-primary" onclick="openRfidManagerModal()">📡 ربط بطاقات RFID</button>
             <button class="btn btn-accent" onclick="openModal('modalAddStudent')">+ إضافة طالب</button>
           </div>
         </div>
@@ -174,10 +175,11 @@ include '../includes/header.php';
                   <th>اسم الطالب</th>
                   <th>الرقم</th>
                   <th>الصف</th>
+                  <th>بطاقة RFID</th>
                   <th>الإجراءات</th>
                 </tr>
               </thead>
-              <tbody id="studentsTable"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">جاري التحميل...</td></tr></tbody>
+              <tbody id="studentsTable"><tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">جاري التحميل...</td></tr></tbody>
             </table>
           </div>
           <div style="margin-top:20px;display:flex;justify-content:center;gap:10px">
@@ -375,6 +377,10 @@ include '../includes/header.php';
       <div class="form-group"><label class="form-label">الاسم الكامل *</label><input class="form-control" id="studentName" placeholder="اسم الطالب"></div>
       <div class="form-group"><label class="form-label">الصف *</label><select class="form-control" id="studentClass"></select></div>
       <div class="form-group"><label class="form-label">الرقم الطلابي</label><input class="form-control" id="studentNum" placeholder="اختياري"></div>
+      <div class="form-group">
+        <label class="form-label">بطاقة RFID الذكية (UID) <span style="color:var(--text-muted);font-weight:400">(اختياري - لولي الأمر)</span></label>
+        <input class="form-control" id="studentRfid" placeholder="مثال: 8A2B3C4D أو امسح البطاقة هنا" style="font-family:monospace;letter-spacing:1px;text-transform:uppercase">
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalAddStudent')">إلغاء</button>
@@ -392,10 +398,50 @@ include '../includes/header.php';
       <div class="form-group"><label class="form-label">الاسم الكامل *</label><input class="form-control" id="editStudentName"></div>
       <div class="form-group"><label class="form-label">الصف *</label><select class="form-control" id="editStudentClass"></select></div>
       <div class="form-group"><label class="form-label">الرقم الطلابي</label><input class="form-control" id="editStudentNum"></div>
+      <div class="form-group">
+        <label class="form-label">بطاقة RFID الذكية (UID) <span style="color:var(--text-muted);font-weight:400">(اختياري - لولي الأمر)</span></label>
+        <input class="form-control" id="editStudentRfid" placeholder="مثال: 8A2B3C4D أو امسح البطاقة هنا" style="font-family:monospace;letter-spacing:1px;text-transform:uppercase">
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalEditStudent')">إلغاء</button>
       <button class="btn btn-accent" onclick="updateStudent()">حفظ التعديل</button>
+    </div>
+  </div>
+</div>
+
+<!-- Quick RFID Assignment Modal -->
+<div class="modal-overlay" id="modalRfidManager">
+  <div class="modal" style="max-width:550px">
+    <div class="modal-header">
+      <h3>📡 إدارة وربط بطاقات RFID للطلاب</h3>
+      <button class="modal-close" onclick="closeModal('modalRfidManager')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:#f8fafc;padding:14px;border-radius:10px;border:1px solid var(--border);margin-bottom:18px;font-size:13px;line-height:1.7;color:var(--text-muted)">
+        💡 <strong>طريقة العمل:</strong> اختر الطالب، ثم اكتب كود البطاقة (UID) أو مررها على قارئ RFID المتصل بالكمبيوتر، ثم اضغط "حفظ وربط البطاقة".
+      </div>
+      <div class="form-group">
+        <label class="form-label">اختر الطالب المراد ربط البطاقة به *</label>
+        <select class="form-control" id="rfidStudentSelect" style="font-size:15px;font-weight:600">
+          <option value="">— جاري تحميل الطلاب —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">رقم بطاقة RFID (UID) *</label>
+        <div style="display:flex;gap:8px">
+          <input class="form-control" id="rfidCardInput" placeholder="مثال: 4A8B2C1D" style="font-family:monospace;letter-spacing:2px;font-size:16px;text-transform:uppercase;font-weight:700">
+          <button class="btn btn-ghost" type="button" onclick="clearRfidField()" title="مسح الحقل">✕</button>
+        </div>
+        <div id="rfidCardStatus" style="margin-top:6px;font-size:13px"></div>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn btn-danger btn-sm" onclick="unlinkStudentRfid()" id="btnUnlinkRfid" style="display:none">🗑️ إلغاء ربط البطاقة</button>
+      <div style="display:flex;gap:8px;margin-right:auto">
+        <button class="btn btn-ghost" onclick="closeModal('modalRfidManager')">إلغاء</button>
+        <button class="btn btn-accent" onclick="saveStudentRfid()">✅ حفظ وربط البطاقة</button>
+      </div>
     </div>
   </div>
 </div>
@@ -711,21 +757,27 @@ function loadStudentsAdmin() {
     if (btnBulkClass) btnBulkClass.style.display = classId ? 'inline-flex' : 'none';
 
     if (pageData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px">لا يوجد طلاب يطابقون البحث</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px">لا يوجد طلاب يطابقون البحث</td></tr>';
         return;
     }
 
     pageData.forEach((s, i) => {
+        const rfidBadge = s.rfid_uid 
+            ? `<span class="badge" style="background:#e0f2fe;color:#0369a1;font-family:monospace;font-size:12px;font-weight:700">🏷️ ${s.rfid_uid}</span>` 
+            : `<span style="color:#94a3b8;font-size:12px">غير معرف</span>`;
+
         tbody.innerHTML += `<tr>
             <td><input type="checkbox" class="check-student" value="${s.id}" onclick="updateBulkBtn('students')"></td>
             <td>${start + i + 1}</td>
             <td>${s.full_name}</td>
             <td>${s.student_number || '—'}</td>
             <td><span class="badge badge-admin">${s.class_name}</span></td>
+            <td>${rfidBadge}</td>
             <td style="display:flex;gap:6px">
-                <button class="btn btn-ghost btn-sm" onclick="printSingleCard(${s.id})">🖨️</button>
-                <button class="btn btn-ghost btn-sm" onclick="editStudent(${s.id},'${s.full_name.replace(/'/g, "\\'")}',${s.class_id},'${(s.student_number || '')}')">✏️</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteStudent(${s.id},'${s.full_name}')">🗑️</button>
+                <button class="btn btn-ghost btn-sm" onclick="printSingleCard(${s.id})" title="طباعة البطاقة">🖨️</button>
+                <button class="btn btn-ghost btn-sm" onclick="openRfidForStudent(${s.id})" title="ربط بطاقة RFID">📡</button>
+                <button class="btn btn-ghost btn-sm" onclick="editStudent(${s.id},'${s.full_name.replace(/'/g, "\\'")}',${s.class_id},'${(s.student_number || '')}','${(s.rfid_uid || '')}')" title="تعديل">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteStudent(${s.id},'${s.full_name}')" title="حذف">🗑️</button>
             </td>
         </tr>`;
     });
@@ -781,17 +833,32 @@ async function addStudent() {
     const name = document.getElementById('studentName').value.trim();
     const classId = document.getElementById('studentClass').value;
     const num = document.getElementById('studentNum').value.trim();
+    const rfid = (document.getElementById('studentRfid') ? document.getElementById('studentRfid').value : '').trim();
     if (!name || !classId) { toast('الاسم والصف مطلوبان', 'error'); return; }
-    const fd = new FormData(); fd.append('full_name', name); fd.append('class_id', classId); fd.append('student_number', num);
+    const fd = new FormData(); 
+    fd.append('full_name', name); 
+    fd.append('class_id', classId); 
+    fd.append('student_number', num);
+    fd.append('rfid_uid', rfid);
     const r = await api('add_student', 'POST', fd);
-    if (r.success) { toast(r.message); closeModal('modalAddStudent'); loadInitialData(); } else toast(r.message, 'error');
+    if (r.success) { 
+        toast(r.message); 
+        closeModal('modalAddStudent'); 
+        document.getElementById('studentName').value = '';
+        document.getElementById('studentNum').value = '';
+        if (document.getElementById('studentRfid')) document.getElementById('studentRfid').value = '';
+        loadInitialData(); 
+    } else toast(r.message, 'error');
 }
 
-function editStudent(id, name, classId, num) {
+function editStudent(id, name, classId, num, rfid = '') {
     document.getElementById('editStudentId').value = id;
     document.getElementById('editStudentName').value = name;
     document.getElementById('editStudentClass').value = classId;
     document.getElementById('editStudentNum').value = num;
+    if (document.getElementById('editStudentRfid')) {
+        document.getElementById('editStudentRfid').value = rfid || '';
+    }
     openModal('modalEditStudent');
 }
 
@@ -801,8 +868,94 @@ async function updateStudent() {
     fd.append('full_name', document.getElementById('editStudentName').value.trim());
     fd.append('class_id', document.getElementById('editStudentClass').value);
     fd.append('student_number', document.getElementById('editStudentNum').value.trim());
+    if (document.getElementById('editStudentRfid')) {
+        fd.append('rfid_uid', document.getElementById('editStudentRfid').value.trim());
+    }
     const r = await api('update_student', 'POST', fd);
     if (r.success) { toast(r.message); closeModal('modalEditStudent'); loadInitialData(); } else toast(r.message, 'error');
+}
+
+/* ================= RFID CARD MANAGEMENT ================= */
+function openRfidManagerModal(preselectedStudentId = null) {
+    const sel = document.getElementById('rfidStudentSelect');
+    if (sel) {
+        sel.innerHTML = '<option value="">— اختر الطالب —</option>' + 
+            allStudents.map(s => {
+                const isSel = preselectedStudentId && s.id == preselectedStudentId;
+                const rfidNote = s.rfid_uid ? ' [بطاقة: ' + s.rfid_uid + ']' : '';
+                return `<option value="${s.id}" data-rfid="${s.rfid_uid || ''}" ${isSel ? 'selected' : ''}>${s.full_name} (${s.class_name || 'بدون صف'})${rfidNote}</option>`;
+            }).join('');
+    }
+    sel.onchange = function() {
+        const opt = sel.options[sel.selectedIndex];
+        const currentRfid = opt ? opt.getAttribute('data-rfid') || '' : '';
+        document.getElementById('rfidCardInput').value = currentRfid;
+        document.getElementById('btnUnlinkRfid').style.display = currentRfid ? 'inline-block' : 'none';
+        document.getElementById('rfidCardStatus').innerHTML = currentRfid 
+            ? `<span style="color:#0369a1">📌 هذا الطالب مربوط حالياً بالبطاقة: <strong>${currentRfid}</strong></span>` 
+            : '<span style="color:var(--text-muted)">الطالب ليس لديه بطاقة حالياً. مرر البطاقة أو اكتب الكود.</span>';
+    };
+    if (preselectedStudentId) {
+        sel.dispatchEvent(new Event('change'));
+    } else {
+        document.getElementById('rfidCardInput').value = '';
+        document.getElementById('btnUnlinkRfid').style.display = 'none';
+        document.getElementById('rfidCardStatus').innerHTML = '';
+    }
+    openModal('modalRfidManager');
+    setTimeout(() => {
+        document.getElementById('rfidCardInput').focus();
+    }, 200);
+}
+
+function openRfidForStudent(studentId) {
+    openRfidManagerModal(studentId);
+}
+
+function clearRfidField() {
+    document.getElementById('rfidCardInput').value = '';
+    document.getElementById('rfidCardInput').focus();
+}
+
+async function saveStudentRfid() {
+    const studentId = document.getElementById('rfidStudentSelect').value;
+    const rfid = document.getElementById('rfidCardInput').value.trim();
+    if (!studentId) {
+        toast('يرجى اختيار الطالب أولاً', 'error');
+        return;
+    }
+    if (!rfid) {
+        toast('يرجى إدخال أو مسح كود بطاقة RFID', 'error');
+        return;
+    }
+    const fd = new FormData();
+    fd.append('id', studentId);
+    fd.append('rfid_uid', rfid);
+    const r = await api('assign_rfid', 'POST', fd);
+    if (r.success) {
+        toast(r.message);
+        closeModal('modalRfidManager');
+        loadInitialData();
+    } else {
+        toast(r.message, 'error');
+    }
+}
+
+async function unlinkStudentRfid() {
+    const studentId = document.getElementById('rfidStudentSelect').value;
+    if (!studentId) return;
+    if (!confirm('هل أنت متأكد من إلغاء ربط بطاقة RFID بهذا الطالب؟')) return;
+    const fd = new FormData();
+    fd.append('id', studentId);
+    fd.append('rfid_uid', '');
+    const r = await api('assign_rfid', 'POST', fd);
+    if (r.success) {
+        toast(r.message);
+        closeModal('modalRfidManager');
+        loadInitialData();
+    } else {
+        toast(r.message, 'error');
+    }
 }
 
 async function deleteStudent(id, name) {

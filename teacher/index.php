@@ -899,7 +899,9 @@ async function loadStudents() {
       ${s.call_id ? `
         <div class="sr-call-info">
           ⏰ وقت الاستدعاء: <strong>${formatTime(s.call_time)}</strong><br>
-          👤 بواسطة: <strong>${s.called_by_name}</strong>
+          ${(s.called_by_name && (s.called_by_name.includes('RFID') || s.called_by_name.includes('بطاقة'))) 
+            ? '<span style="display:inline-block;margin-top:3px;background:rgba(240,165,0,0.15);color:#d97706;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700">📡 بطاقة ولي الأمر (RFID)</span>'
+            : '👤 بواسطة: <strong>' + (s.called_by_name || 'الإدارة') + '</strong>'}
         </div>` : ''}
     </div>`).join('');
 

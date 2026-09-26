@@ -38,7 +38,7 @@ if ($action === 'get_students') {
     $classId = intval($_GET['class_id'] ?? 0);
 
     $stmt = $db->prepare("
-        SELECT s.id, s.full_name, s.student_number,
+        SELECT s.id, s.full_name, s.student_number, s.rfid_uid,
                dc.call_time, dc.id as call_id,
                u.full_name as called_by_name
         FROM students s
@@ -78,7 +78,7 @@ if ($action === 'get_today_all_calls') {
 if (in_array($action, [
     'add_class','delete_class','rename_class',
     'add_student','delete_student','update_student',
-    'get_all_students','add_user','delete_user',
+    'assign_rfid','get_all_students','add_user','delete_user',
     'get_users','bulk_import_students'
 ])) {
     requireAdmin();
@@ -157,6 +157,7 @@ if ($action === 'add_student') {
     $name    = trim($_POST['full_name'] ?? '');
     $classId = intval($_POST['class_id'] ?? 0);
     $number  = trim($_POST['student_number'] ?? '');
+    $rfidUid = strtoupper(preg_replace('/[^a-zA-Z0-9]/', '', trim($_POST['rfid_uid'] ?? '')));
 
     if (empty($name) || !$classId)
         jsonResponse(false, 'الاسم والصف مطلوبان');
@@ -170,6 +171,18 @@ if ($action === 'add_student') {
         }
     }
 
+    // Check if RFID UID already exists
+    if (!empty($rfidUid)) {
+        $checkRfid = $db->prepare("SELECT id, full_name FROM students WHERE UPPER(REPLACE(REPLACE(REPLACE(rfid_uid, ':', ''), ' ', ''), '-', '')) = ?");
+        $checkRfid->execute([$rfidUid]);
+        $existing = $checkRfid->fetch();
+        if ($existing) {
+            jsonResponse(false, 'رقم بطاقة RFID مسجل مسبقاً للطالب: ' . $existing['full_name']);
+        }
+    } else {
+        $rfidUid = null;
+    }
+
     // If student number is empty, generate a random one
     if (empty($number)) {
         $number = generateRandomStudentNumber($db);
@@ -179,11 +192,11 @@ if ($action === 'add_student') {
     $barcode = generateBarcodeFromNumber($number);
 
     $stmt = $db->prepare("
-        INSERT INTO students (full_name, class_id, student_number, barcode)
-        VALUES (?,?,?,?)
+        INSERT INTO students (full_name, class_id, student_number, barcode, rfid_uid)
+        VALUES (?,?,?,?,?)
     ");
 
-    $stmt->execute([$name, $classId, $number, $barcode]);
+    $stmt->execute([$name, $classId, $number, $barcode, $rfidUid]);
 
     jsonResponse(true, 'تم إضافة الطالب بنجاح ورقم الطالب هو: ' . $number);
 }
@@ -202,9 +215,22 @@ if ($action === 'update_student') {
     $name    = trim($_POST['full_name'] ?? '');
     $classId = intval($_POST['class_id'] ?? 0);
     $number  = trim($_POST['student_number'] ?? '');
+    $rfidUid = strtoupper(preg_replace('/[^a-zA-Z0-9]/', '', trim($_POST['rfid_uid'] ?? '')));
 
     if (!$id || empty($name) || !$classId)
         jsonResponse(false, 'بيانات ناقصة');
+
+    // Check if RFID UID already exists for another student
+    if (!empty($rfidUid)) {
+        $checkRfid = $db->prepare("SELECT id, full_name FROM students WHERE UPPER(REPLACE(REPLACE(REPLACE(rfid_uid, ':', ''), ' ', ''), '-', '')) = ? AND id != ?");
+        $checkRfid->execute([$rfidUid, $id]);
+        $existing = $checkRfid->fetch();
+        if ($existing) {
+            jsonResponse(false, 'رقم بطاقة RFID مسجل مسبقاً للطالب: ' . $existing['full_name']);
+        }
+    } else {
+        $rfidUid = null;
+    }
 
     // If number is empty, generate one
     if (empty($number)) {
@@ -216,13 +242,36 @@ if ($action === 'update_student') {
 
     $stmt = $db->prepare("
         UPDATE students 
-        SET full_name=?, class_id=?, student_number=?, barcode=? 
+        SET full_name=?, class_id=?, student_number=?, barcode=?, rfid_uid=? 
         WHERE id=?
     ");
 
-    $stmt->execute([$name, $classId, $number, $barcode, $id]);
+    $stmt->execute([$name, $classId, $number, $barcode, $rfidUid, $id]);
 
     jsonResponse(true, 'تم تعديل بيانات الطالب بنجاح');
+}
+
+if ($action === 'assign_rfid') {
+    $id      = intval($_POST['id'] ?? 0);
+    $rfidUid = strtoupper(preg_replace('/[^a-zA-Z0-9]/', '', trim($_POST['rfid_uid'] ?? '')));
+
+    if (!$id) jsonResponse(false, 'معرف الطالب مطلوب');
+
+    if (!empty($rfidUid)) {
+        $checkRfid = $db->prepare("SELECT id, full_name FROM students WHERE UPPER(REPLACE(REPLACE(REPLACE(rfid_uid, ':', ''), ' ', ''), '-', '')) = ? AND id != ?");
+        $checkRfid->execute([$rfidUid, $id]);
+        $existing = $checkRfid->fetch();
+        if ($existing) {
+            jsonResponse(false, 'هذه البطاقة مسجلة مسبقاً للطالب: ' . $existing['full_name']);
+        }
+    } else {
+        $rfidUid = null;
+    }
+
+    $stmt = $db->prepare("UPDATE students SET rfid_uid = ? WHERE id = ?");
+    $stmt->execute([$rfidUid, $id]);
+
+    jsonResponse(true, empty($rfidUid) ? 'تم إلغاء ربط بطاقة RFID بنجاح' : 'تم ربط بطاقة RFID بنجاح');
 }
 
 /* ================= MANAGEMENT ================= */
