@@ -1,16 +1,18 @@
 /*
   ==================================================================================
   نظام استدعاء الطلاب بالبطاقة الذكية RFID
-  المكونات: ESP32 DevKitC + قارئ RFID RC522 + جرس تنبيه Buzzer + ليدات إشارة
+  المكونات: ESP32 DevKitC + قارئ RFID RC522 + جرس تنبيه Buzzer + ليدات إشارة (أخضر وأحمر)
   ==================================================================================
   
-  طريقة العمل:
-  1. يتصل جهاز ESP32 بشبكة الواي فاي (WiFi) بالمدرسة.
-  2. يقوم ولي الأمر بتمرير بطاقته الذكية (RFID) على قارئ RC522 عند البوابة.
-  3. يقرأ الـ ESP32 الرقم الفريد للبطاقة (UID) ويرسله فوراً عبر الـ HTTP إلى الخادم.
-  4. يتحقق الخادم من اسم الطالب والصف، ويسجل عملية الاستدعاء فوراً.
-  5. تظهر التنبيهات في شاشة المعلم تلقائياً خلال أقل من ثانية وبدون أي تدخل بشري!
-  6. يعطي جهاز البوابة تأكيداً صوتياً وضوئياً لولي الأمر (نغمة نجاح أو تنبيه).
+  طريقة العمل وتوزيع التنبيهات:
+  1. الإضاءة الخضراء: تضيء عند قبول طلب الاستدعاء بنجاح (CALLED_SUCCESS).
+  2. الإضاءة الحمراء: تضيء في حالتين:
+     - الطالب غير مسجل في النظام (NOT_FOUND).
+     - الطالب تم استدعاؤه مسبقاً اليوم (ALREADY_CALLED).
+  3. درجات الصوت (3 درجات مميزة من النغمات عبر الـ Buzzer):
+     - درجة نجاح الاستدعاء: نغمتان تصاعديتان سريعتان ومبهجتان (1900Hz -> 2500Hz).
+     - درجة تم الاستدعاء مسبقاً: 3 نغمات تنبيهية متتالية متوسطة النبرة (1400Hz).
+     - درجة لم ينجح الاستدعاء: نغمة واحدة غليظة ومنخفضة النبرة وطويلة (550Hz).
 
   المكتبات المطلوبة في Arduino IDE:
   - MFRC522 by GithubCommunity (أو miguelbalboa)
@@ -20,6 +22,7 @@
 
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <SPI.h>
 #include <MFRC522.h>
 #include <ArduinoJson.h>
@@ -28,12 +31,13 @@
 const char* WIFI_SSID     = "YOUR_WIFI_SSID";      // اسم شبكة الواي فاي
 const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";  // كلمة مرور الواي فاي
 
-// رابط السيرفر الخاص بنظام الاستدعاء (استبدل بالدومين أو الـ IP الخاص بك)
-// مثال: "https://school.coolify.yourdomain.com/api/rfid_call.php"
-// أو في الشبكة المحلية: "http://192.168.1.100/api/rfid_call.php"
+// رابط السيرفر الخاص بنظام الاستدعاء (سيرفر Coolify أو سيرفر محلي)
+// أمثلة:
+// "https://your-school-app.coolify.domain/api/rfid_call.php"
+// "http://192.168.1.100/api/rfid_call.php"
 const char* SERVER_URL    = "http://192.168.1.100/api/rfid_call.php";
 
-// اسم بوابة أو جهاز الاستدعاء
+// اسم بوابة أو جهاز الاستدعاء (يظهر في تقارير النظام)
 const char* DEVICE_ID     = "بوابة أولياء الأمور 1";
 
 // =================== توصيل الأسلاك (PINOUT) ===================
@@ -49,17 +53,28 @@ const char* DEVICE_ID     = "بوابة أولياء الأمور 1";
   IRQ        -->  (غير متصل / Not Connected)
   GND        -->  GND
   RST        -->  GPIO 22
-  3.3V       -->  3.3V (تنبيه هام جداً: لا توصله بـ 5V نهائياً!)
+  3.3V       -->  3V3 (تنبيه حاسم: لا توصله بـ 5V أو VIN نهائياً!)
+  -----------------------------------------
+
+  توصيل التنبيهات (Buzzer & LEDs):
+  -----------------------------------------
+  القطعة                  ESP32 Pin
+  -----------------------------------------
+  Buzzer (+) جرس موجب  --> GPIO 4
+  Buzzer (-) جرس سالب  --> GND
+  LED الأخضر (+) موجب   --> GPIO 2 (أو عبر مقاومة 220Ω)
+  LED الأخضر (-) سالب   --> GND
+  LED الأحمر (+) موجب   --> GPIO 15 (أو عبر مقاومة 220Ω)
+  LED الأحمر (-) سالب   --> GND
   -----------------------------------------
 */
 
-#define SS_PIN    5   // SDA
-#define RST_PIN   22  // RST
+#define SS_PIN       5   // SDA
+#define RST_PIN      22  // RST
 
-// دبابيس الجرس والليدات للتأكيد الحركي لولي الأمر
 #define BUZZER_PIN   4   // جرس التنبيه (Buzzer)
-#define LED_GREEN    2   // ليد أخضر (تأكيد الاستدعاء بنجاح)
-#define LED_RED      15  // ليد أحمر (بطاقة غير مسجلة أو خطأ)
+#define LED_GREEN    2   // ليد أخضر (قبول طلب الاستدعاء)
+#define LED_RED      15  // ليد أحمر (غير مسجل أو تم استدعاؤه مسبقاً)
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
@@ -69,40 +84,69 @@ unsigned long lastScanTime = 0;
 const unsigned long SCAN_COOLDOWN_MS = 3500; // منع المسح المتكرر لنفس البطاقة لمدة 3.5 ثوانٍ
 
 // =================== وظائف التنبيه الصوتي والضوئي ===================
+
+// 1. نجاح الاستدعاء: إضاءة خضراء + نغمة مبهجة مرتفعة النبرة وتصاعدية
 void soundSuccess() {
-  // نغمتان قصيرتان سريعتان ومبهجتان لنجاح الاستدعاء
+  digitalWrite(LED_RED, LOW);
   digitalWrite(LED_GREEN, HIGH);
-  tone(BUZZER_PIN, 2000, 100);
-  delay(120);
-  tone(BUZZER_PIN, 2600, 150);
-  delay(160);
+  
+  // نغمتان تصاعديتان مبهجتان (درجة النجاح)
+  tone(BUZZER_PIN, 1900, 120);
+  delay(140);
+  tone(BUZZER_PIN, 2500, 180);
+  delay(200);
+  noTone(BUZZER_PIN);
+  digitalWrite(BUZZER_PIN, LOW);
+  
   digitalWrite(LED_GREEN, LOW);
 }
 
+// 2. تم الاستدعاء مسبقاً: إضاءة حمراء + 3 رنات تنبيهية متتالية متوسطة النبرة
 void soundAlreadyCalled() {
-  // ثلاث نغمات خفيفة: الطالب مستدعى مسبقاً
+  digitalWrite(LED_GREEN, LOW);
+  
+  // 3 نغمات تنبيهية مميزة مع وميض الليد الأحمر 3 مرات
   for (int i = 0; i < 3; i++) {
-    digitalWrite(LED_GREEN, HIGH);
-    tone(BUZZER_PIN, 1800, 70);
-    delay(100);
-    digitalWrite(LED_GREEN, LOW);
-    delay(60);
+    digitalWrite(LED_RED, HIGH);
+    tone(BUZZER_PIN, 1400, 90);
+    delay(110);
+    noTone(BUZZER_PIN);
+    digitalWrite(BUZZER_PIN, LOW);
+    digitalWrite(LED_RED, LOW);
+    delay(80);
   }
 }
 
+// 3. لم ينجح الاستدعاء / غير مسجل: إضاءة حمراء + نغمة طويلة منخفضة غليظة
 void soundError() {
-  // نغمة طويلة منخفضة للبطاقة غير المعرفة أو الخطأ
+  digitalWrite(LED_GREEN, LOW);
   digitalWrite(LED_RED, HIGH);
-  tone(BUZZER_PIN, 600, 600);
-  delay(650);
+  
+  // نغمة خطأ عميقة ومنخفضة التردد (درجة فشل الاستدعاء)
+  tone(BUZZER_PIN, 550, 650);
+  delay(700);
+  noTone(BUZZER_PIN);
+  digitalWrite(BUZZER_PIN, LOW);
+  
   digitalWrite(LED_RED, LOW);
 }
 
+// وميض الليد الأحمر أثناء محاولة الاتصال بالواي فاي
 void soundWiFiConnecting() {
   digitalWrite(LED_RED, HIGH);
   delay(100);
   digitalWrite(LED_RED, LOW);
   delay(100);
+}
+
+// نغمة ترحيبية خفيفة عند تشغيل الجهاز وجاهزيته
+void soundStartup() {
+  tone(BUZZER_PIN, 1600, 80);
+  delay(100);
+  tone(BUZZER_PIN, 2200, 120);
+  delay(140);
+  noTone(BUZZER_PIN);
+  digitalWrite(BUZZER_PIN, LOW);
 }
 
 // =================== الإعداد الأولي (SETUP) ===================
@@ -144,8 +188,8 @@ void setup() {
   Serial.print("[WiFi] عنوان IP الجهاز: ");
   Serial.println(WiFi.localIP());
 
-  // صافرة ترحيبية جاهزية النظام
-  soundSuccess();
+  // صافرة ترحيبية لجاهزية النظام
+  soundStartup();
   Serial.println("النظام جاهز لمسح بطاقات أولياء الأمور...");
 }
 
@@ -159,12 +203,27 @@ void sendRfidCall(String cardUid) {
   }
 
   HTTPClient http;
-  http.begin(SERVER_URL);
-  http.addHeader("Content-Type", "application/json");
-  http.setTimeout(4000); // 4 ثوان كحد أقصى للاستجابة
+  WiFiClientSecure secureClient;
+  WiFiClient plainClient;
 
-  // تجهيز حمولة JSON
-  StaticJsonDocument<256> reqDoc;
+  // دعم اتصالات HTTP العادية وكذلك اتصالات HTTPS المشفرة (Coolify)
+  if (String(SERVER_URL).startsWith("https")) {
+    secureClient.setInsecure(); // تخطي فحص البصمة للشهادات
+    http.begin(secureClient, SERVER_URL);
+  } else {
+    http.begin(plainClient, SERVER_URL);
+  }
+
+  http.addHeader("Content-Type", "application/json");
+  http.setTimeout(5000); // مهلة أقصاها 5 ثوانٍ للاستجابة
+
+  // تجهيز حمولة JSON المتوافقة مع ArduinoJson v6 و v7
+  #if ARDUINOJSON_VERSION_MAJOR >= 7
+    JsonDocument reqDoc;
+  #else
+    StaticJsonDocument<256> reqDoc;
+  #endif
+
   reqDoc["card_uid"] = cardUid;
   reqDoc["device_id"] = DEVICE_ID;
   reqDoc["action"] = "call";
@@ -186,7 +245,12 @@ void sendRfidCall(String cardUid) {
     Serial.print("[السيرفر] الرد: ");
     Serial.println(response);
 
-    StaticJsonDocument<512> resDoc;
+    #if ARDUINOJSON_VERSION_MAJOR >= 7
+      JsonDocument resDoc;
+    #else
+      StaticJsonDocument<512> resDoc;
+    #endif
+
     DeserializationError err = deserializeJson(resDoc, response);
 
     if (!err) {
@@ -201,14 +265,20 @@ void sendRfidCall(String cardUid) {
         Serial.print(" (");
         Serial.print(className);
         Serial.println(")");
+        
+        // قبول طلب الاستدعاء: إضاءة خضراء + نغمة نجاح
         soundSuccess();
       } 
       else if (strcmp(code, "ALREADY_CALLED") == 0) {
         Serial.println("ℹ️ الطالب تم استدعاؤه مسبقاً اليوم!");
+        
+        // تم الاستدعاء مسبقاً: إضاءة حمراء + 3 رنات
         soundAlreadyCalled();
       } 
       else if (strcmp(code, "NOT_FOUND") == 0) {
         Serial.println("⚠️ تنبيه: البطاقة غير مسجلة في قاعدة بيانات المدرسة!");
+        
+        // بطاقة غير مسجلة: إضاءة حمراء + نغمة فشل منخفضة
         soundError();
       } 
       else {
