@@ -28,14 +28,14 @@
 #include <ArduinoJson.h>
 
 // =================== إعدادات الشبكة والسيرفر ===================
-const char* WIFI_SSID     = "YOUR_WIFI_SSID";      // اسم شبكة الواي فاي
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";  // كلمة مرور الواي فاي
+const char* WIFI_SSID     = "iPhone";      // اسم شبكة الواي فاي
+const char* WIFI_PASSWORD = "123456789";  // كلمة مرور الواي فاي
 
 // رابط السيرفر الخاص بنظام الاستدعاء (سيرفر Coolify أو سيرفر محلي)
 // أمثلة:
-// "https://your-school-app.coolify.domain/api/rfid_call.php"
-// "http://192.168.1.100/api/rfid_call.php"
-const char* SERVER_URL    = "http://192.168.1.100/api/rfid_call.php";
+// "https://exit.apps.nakama.qa/"
+// "https://exit.apps.nakama.qa/api/rfid_call.php"
+const char* SERVER_URL    = "https://exit.apps.nakama.qa/api/rfid_call.php";
 
 // اسم بوابة أو جهاز الاستدعاء (يظهر في تقارير النظام)
 const char* DEVICE_ID     = "بوابة أولياء الأمور 1";
