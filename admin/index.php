@@ -419,7 +419,17 @@ include '../includes/header.php';
     </div>
     <div class="modal-body">
       <div style="background:#f8fafc;padding:14px;border-radius:10px;border:1px solid var(--border);margin-bottom:18px;font-size:13px;line-height:1.7;color:var(--text-muted)">
-        💡 <strong>طريقة العمل:</strong> اختر الطالب، ثم اكتب كود البطاقة (UID) أو مررها على قارئ RFID المتصل بالكمبيوتر، ثم اضغط "حفظ وربط البطاقة".
+        💡 <strong>طريقة العمل:</strong> اختر الطالب، ثم اتصل بقارئ RFID مرة واحدة ومرر البطاقة. سيظهر رقم UID تلقائياً في الحقل، ثم اضغط "حفظ وربط البطاقة".
+      </div>
+      <div class="form-group">
+        <label class="form-label">قارئ RFID المتصل بالكمبيوتر</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-primary" type="button" id="btnConnectRfidReader" onclick="connectRfidReader()">🔌 اتصال بقارئ RFID</button>
+          <button class="btn btn-ghost" type="button" id="btnDisconnectRfidReader" onclick="disconnectRfidReader()" style="display:none">⏏️ قطع الاتصال</button>
+        </div>
+        <div id="rfidSerialStatus" style="margin-top:7px;font-size:13px;color:var(--text-muted)">
+          استخدم Chrome أو Edge على الكمبيوتر. أغلق Serial Monitor في Arduino IDE قبل الاتصال.
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label">اختر الطالب المراد ربط البطاقة به *</label>
@@ -876,6 +886,175 @@ async function updateStudent() {
 }
 
 /* ================= RFID CARD MANAGEMENT ================= */
+let rfidSerialPort = null;
+let rfidSerialReader = null;
+let rfidSerialKeepReading = false;
+
+function setRfidSerialStatus(message, type = 'info') {
+    const el = document.getElementById('rfidSerialStatus');
+    if (!el) return;
+    const colors = {
+        info: 'var(--text-muted)',
+        success: '#15803d',
+        error: '#b91c1c',
+        warning: '#b45309'
+    };
+    el.style.color = colors[type] || colors.info;
+    el.innerHTML = message;
+}
+
+function updateRfidSerialButtons(connected) {
+    const connectBtn = document.getElementById('btnConnectRfidReader');
+    const disconnectBtn = document.getElementById('btnDisconnectRfidReader');
+    if (connectBtn) connectBtn.style.display = connected ? 'none' : 'inline-flex';
+    if (disconnectBtn) disconnectBtn.style.display = connected ? 'inline-flex' : 'none';
+}
+
+function extractUidFromSerialLine(line) {
+    // يدعم مخرجات ESP32 الحالية مثل:
+    // [إرسال] مسح بطاقة برقم UID: 69E5CFA2
+    // UID: 69 E5 CF A2
+    const match = String(line).match(/UID\s*[:=]\s*([0-9A-Fa-f][0-9A-Fa-f\s:-]{5,})/i);
+    if (!match) return '';
+
+    const uid = match[1].replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+    return uid.length >= 6 ? uid : '';
+}
+
+function applyScannedRfidUid(uid) {
+    const input = document.getElementById('rfidCardInput');
+    if (!input || !uid) return;
+
+    input.value = uid;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const studentId = document.getElementById('rfidStudentSelect')?.value;
+    document.getElementById('rfidCardStatus').innerHTML = studentId
+        ? `<span style="color:#15803d">✅ تم قراءة البطاقة تلقائياً: <strong>${uid}</strong></span>`
+        : `<span style="color:#b45309">✅ تم قراءة البطاقة: <strong>${uid}</strong> — اختر الطالب ثم احفظ الربط.</span>`;
+
+    input.focus();
+}
+
+async function readRfidSerial() {
+    if (!rfidSerialPort?.readable) return;
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+        rfidSerialReader = rfidSerialPort.readable.getReader();
+
+        while (rfidSerialKeepReading) {
+            const { value, done } = await rfidSerialReader.read();
+            if (done) break;
+            if (!value) continue;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split(/\r?\n/);
+            buffer = lines.pop() || '';
+
+            for (const rawLine of lines) {
+                const line = rawLine.trim();
+                if (!line) continue;
+
+                console.log('[RFID ESP32]', line);
+
+                const uid = extractUidFromSerialLine(line);
+                if (uid) {
+                    applyScannedRfidUid(uid);
+                    setRfidSerialStatus(`✅ القارئ متصل — آخر بطاقة: <strong>${uid}</strong>`, 'success');
+                }
+            }
+        }
+    } catch (error) {
+        if (rfidSerialKeepReading) {
+            console.error('RFID serial read error:', error);
+            setRfidSerialStatus('❌ انقطع الاتصال بقارئ RFID. حاول الاتصال مرة أخرى.', 'error');
+        }
+    } finally {
+        try {
+            rfidSerialReader?.releaseLock();
+        } catch (_) {}
+        rfidSerialReader = null;
+    }
+}
+
+async function connectRfidReader() {
+    if (!('serial' in navigator)) {
+        setRfidSerialStatus('❌ المتصفح لا يدعم Web Serial. افتح النظام من Chrome أو Edge على الكمبيوتر.', 'error');
+        return;
+    }
+
+    if (rfidSerialPort) {
+        setRfidSerialStatus('✅ قارئ RFID متصل بالفعل.', 'success');
+        updateRfidSerialButtons(true);
+        return;
+    }
+
+    try {
+        setRfidSerialStatus('جاري اختيار منفذ ESP32...', 'info');
+
+        rfidSerialPort = await navigator.serial.requestPort();
+        await rfidSerialPort.open({ baudRate: 115200 });
+
+        rfidSerialKeepReading = true;
+        updateRfidSerialButtons(true);
+        setRfidSerialStatus('✅ تم الاتصال بالـ ESP32. مرر البطاقة الآن.', 'success');
+
+        readRfidSerial();
+    } catch (error) {
+        console.error('RFID serial connect error:', error);
+
+        if (error?.name === 'NotFoundError') {
+            setRfidSerialStatus('لم يتم اختيار منفذ. اضغط اتصال وحاول مرة أخرى.', 'warning');
+        } else if (String(error?.message || '').toLowerCase().includes('failed to open')) {
+            setRfidSerialStatus('❌ تعذر فتح المنفذ. أغلق Serial Monitor في Arduino IDE ثم حاول مرة أخرى.', 'error');
+        } else {
+            setRfidSerialStatus('❌ تعذر الاتصال بقارئ RFID: ' + (error?.message || 'خطأ غير معروف'), 'error');
+        }
+
+        rfidSerialPort = null;
+        rfidSerialKeepReading = false;
+        updateRfidSerialButtons(false);
+    }
+}
+
+async function disconnectRfidReader() {
+    rfidSerialKeepReading = false;
+
+    try {
+        if (rfidSerialReader) {
+            await rfidSerialReader.cancel();
+        }
+    } catch (_) {}
+
+    try {
+        if (rfidSerialPort) {
+            await rfidSerialPort.close();
+        }
+    } catch (error) {
+        console.warn('RFID serial close warning:', error);
+    }
+
+    rfidSerialReader = null;
+    rfidSerialPort = null;
+    updateRfidSerialButtons(false);
+    setRfidSerialStatus('تم قطع الاتصال. يمكنك الاتصال بالقارئ مرة أخرى عند الحاجة.', 'info');
+}
+
+if ('serial' in navigator) {
+    navigator.serial.addEventListener('disconnect', (event) => {
+        if (rfidSerialPort && event.target === rfidSerialPort) {
+            rfidSerialKeepReading = false;
+            rfidSerialReader = null;
+            rfidSerialPort = null;
+            updateRfidSerialButtons(false);
+            setRfidSerialStatus('⚠️ تم فصل ESP32 من الكمبيوتر.', 'warning');
+        }
+    });
+}
+
 function openRfidManagerModal(preselectedStudentId = null) {
     const sel = document.getElementById('rfidStudentSelect');
     if (sel) {
