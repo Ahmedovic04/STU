@@ -564,6 +564,33 @@ if ($action === 'reset_calls') {
 
 if ($action === 'get_card_settings') {
     try {
+        // Add new columns if they don't exist (safe migration)
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS card_settings (
+                id INT PRIMARY KEY DEFAULT 1,
+                font_size INT DEFAULT 11,
+                card_width FLOAT DEFAULT 3.37,
+                card_height FLOAT DEFAULT 2.125,
+                barcode_size INT DEFAULT 80,
+                header_color VARCHAR(20) DEFAULT '#1a3a5c',
+                text_color VARCHAR(20) DEFAULT '#1e293b',
+                show_rfid TINYINT(1) DEFAULT 1,
+                show_student_number TINYINT(1) DEFAULT 1,
+                show_qr TINYINT(1) DEFAULT 1,
+                school_name VARCHAR(200) DEFAULT '',
+                school_subtitle VARCHAR(200) DEFAULT ''
+            ) ENGINE=InnoDB
+        ");
+        // Safe: add columns if missing
+        $cols = ['header_color VARCHAR(20) DEFAULT \'#1a3a5c\'', 'text_color VARCHAR(20) DEFAULT \'#1e293b\'',
+                 'show_rfid TINYINT(1) DEFAULT 1', 'show_student_number TINYINT(1) DEFAULT 1',
+                 'show_qr TINYINT(1) DEFAULT 1', 'school_name VARCHAR(200) DEFAULT \'\'',
+                 'school_subtitle VARCHAR(200) DEFAULT \'\''];
+        foreach ($cols as $col) {
+            $colName = explode(' ', $col)[0];
+            try { $db->exec("ALTER TABLE card_settings ADD COLUMN $col"); } catch (PDOException $e) { /* already exists */ }
+        }
+        $db->exec("INSERT IGNORE INTO card_settings (id, font_size, card_width, card_height, barcode_size) VALUES (1, 11, 3.37, 2.125, 80)");
         $stmt = $db->query("SELECT * FROM card_settings WHERE id = 1");
         $settings = $stmt->fetch();
     } catch (PDOException $e) {
@@ -571,19 +598,19 @@ if ($action === 'get_card_settings') {
     }
     
     if (!$settings) {
-        // Create default settings if not exists
-        $db->exec("
-            CREATE TABLE IF NOT EXISTS card_settings (
-                id INT PRIMARY KEY DEFAULT 1,
-                font_size INT DEFAULT 11,
-                card_width FLOAT DEFAULT 3.37,
-                card_height FLOAT DEFAULT 2.125,
-                barcode_size INT DEFAULT 80
-            ) ENGINE=InnoDB
-        ");
-        $db->exec("INSERT IGNORE INTO card_settings (id, font_size, card_width, card_height, barcode_size) VALUES (1, 11, 3.37, 2.125, 80)");
-        $settings = $db->query("SELECT * FROM card_settings WHERE id = 1")->fetch();
+        $settings = ['font_size'=>11,'card_width'=>3.37,'card_height'=>2.125,'barcode_size'=>80,
+                     'header_color'=>'#1a3a5c','text_color'=>'#1e293b',
+                     'show_rfid'=>1,'show_student_number'=>1,'show_qr'=>1,
+                     'school_name'=>'','school_subtitle'=>''];
     }
+    // Fill defaults for missing keys
+    $settings['header_color'] = $settings['header_color'] ?? '#1a3a5c';
+    $settings['text_color']   = $settings['text_color']   ?? '#1e293b';
+    $settings['show_rfid']    = isset($settings['show_rfid'])    ? (int)$settings['show_rfid']    : 1;
+    $settings['show_student_number'] = isset($settings['show_student_number']) ? (int)$settings['show_student_number'] : 1;
+    $settings['show_qr']      = isset($settings['show_qr'])      ? (int)$settings['show_qr']      : 1;
+    $settings['school_name']  = $settings['school_name']  ?? '';
+    $settings['school_subtitle'] = $settings['school_subtitle'] ?? '';
     
     jsonResponse(true, '', $settings);
 }
@@ -591,19 +618,32 @@ if ($action === 'get_card_settings') {
 if ($action === 'update_card_settings') {
     requireAdmin();
     
-    $fontSize    = intval($_POST['font_size'] ?? 11);
-    $cardWidth   = floatval($_POST['card_width'] ?? 3.37);
-    $cardHeight  = floatval($_POST['card_height'] ?? 2.125);
-    $barcodeSize = intval($_POST['barcode_size'] ?? 80);
+    $fontSize       = intval($_POST['font_size'] ?? 11);
+    $cardWidth      = floatval($_POST['card_width'] ?? 3.37);
+    $cardHeight     = floatval($_POST['card_height'] ?? 2.125);
+    $barcodeSize    = intval($_POST['barcode_size'] ?? 80);
+    $headerColor    = preg_replace('/[^#a-fA-F0-9]/', '', $_POST['header_color'] ?? '#1a3a5c');
+    $textColor      = preg_replace('/[^#a-fA-F0-9]/', '', $_POST['text_color'] ?? '#1e293b');
+    $showRfid       = isset($_POST['show_rfid']) ? 1 : 0;
+    $showStudentNum = isset($_POST['show_student_number']) ? 1 : 0;
+    $showQr         = isset($_POST['show_qr']) ? 1 : 0;
+    $schoolName     = trim($_POST['school_name'] ?? '');
+    $schoolSubtitle = trim($_POST['school_subtitle'] ?? '');
     
     $stmt = $db->prepare("
         UPDATE card_settings 
-        SET font_size = ?, card_width = ?, card_height = ?, barcode_size = ? 
+        SET font_size=?, card_width=?, card_height=?, barcode_size=?,
+            header_color=?, text_color=?,
+            show_rfid=?, show_student_number=?, show_qr=?,
+            school_name=?, school_subtitle=?
         WHERE id = 1
     ");
-    $stmt->execute([$fontSize, $cardWidth, $cardHeight, $barcodeSize]);
+    $stmt->execute([$fontSize, $cardWidth, $cardHeight, $barcodeSize,
+                    $headerColor, $textColor,
+                    $showRfid, $showStudentNum, $showQr,
+                    $schoolName, $schoolSubtitle]);
     
-    jsonResponse(true, 'تم حفظ إعدادات البطاقة بنجاح');
+    jsonResponse(true, 'تم حفظ إعدادات البطاقة بنجاح ✅');
 }
 
 /* ================= DEFAULT ================= */

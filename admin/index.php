@@ -224,38 +224,109 @@ include '../includes/header.php';
     <div id="section-card-settings" style="display:none">
       <div class="card">
         <div class="card-header">
-          <h2>📇 إعدادات بطاقة الطالب</h2>
+          <h2>📇 إعدادات طباعة البطاقة الذكية</h2>
           <button class="btn btn-accent" onclick="saveCardSettings()">💾 حفظ الإعدادات</button>
         </div>
         <div class="card-body">
-          <div class="settings-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:20px">
-            <div class="form-group">
-              <label class="form-label">حجم الخط الأساسي (pt)</label>
-              <input type="number" class="form-control" id="set-font-size" value="11">
-              <small style="color:var(--text-muted)">القيمة الافتراضية: 11</small>
-            </div>
-            <div class="form-group">
-              <label class="form-label">عرض البطاقة (بوصة - inch)</label>
-              <input type="number" step="0.01" class="form-control" id="set-card-width" value="3.37">
-              <small style="color:var(--text-muted)">القياسي: 3.37</small>
-            </div>
-            <div class="form-group">
-              <label class="form-label">ارتفاع البطاقة (بوصة - inch)</label>
-              <input type="number" step="0.01" class="form-control" id="set-card-height" value="2.125">
-              <small style="color:var(--text-muted)">القياسي: 2.125</small>
-            </div>
-            <div class="form-group">
-              <label class="form-label">حجم الباركود (px)</label>
-              <input type="number" class="form-control" id="set-barcode-size" value="80">
-              <small style="color:var(--text-muted)">الافتراضي: 80</small>
+
+          <!-- Section: Card Size & Font -->
+          <div style="background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px">
+            <h3 style="margin:0 0 16px;font-size:14px;color:var(--primary);display:flex;align-items:center;gap:8px">📐 أبعاد البطاقة والخط</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:16px">
+              <div class="form-group" style="margin:0">
+                <label class="form-label">حجم الخط الأساسي (pt)</label>
+                <input type="number" class="form-control" id="set-font-size" value="11" min="7" max="16">
+                <small style="color:var(--text-muted)">القيمة الافتراضية: 11</small>
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label">عرض البطاقة (بوصة)</label>
+                <input type="number" step="0.01" class="form-control" id="set-card-width" value="3.37">
+                <small style="color:var(--text-muted)">القياسي CR80: 3.37</small>
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label">ارتفاع البطاقة (بوصة)</label>
+                <input type="number" step="0.01" class="form-control" id="set-card-height" value="2.125">
+                <small style="color:var(--text-muted)">القياسي CR80: 2.125</small>
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label">حجم صورة QR (px)</label>
+                <input type="number" class="form-control" id="set-barcode-size" value="80" min="50" max="150">
+                <small style="color:var(--text-muted)">الافتراضي: 80</small>
+              </div>
             </div>
           </div>
-          
-          <div class="preview-area" style="margin-top:40px;padding:20px;background:#f0f4f9;border-radius:12px;text-align:center">
-            <h3 style="margin-bottom:20px;color:var(--primary)">👀 معاينة مباشرة</h3>
-            <div id="card-preview-container"></div>
-            <button class="btn btn-ghost btn-sm" style="margin-top:20px" onclick="updatePreview()">تحديث المعاينة</button>
+
+          <!-- Section: Colors -->
+          <div style="background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px">
+            <h3 style="margin:0 0 16px;font-size:14px;color:var(--primary);display:flex;align-items:center;gap:8px">🎨 ألوان البطاقة</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:16px">
+              <div class="form-group" style="margin:0">
+                <label class="form-label">لون الترويسة والتذييل</label>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <input type="color" id="set-header-color" value="#1a3a5c" style="width:48px;height:40px;border:none;border-radius:8px;cursor:pointer;padding:2px">
+                  <input type="text" id="set-header-color-text" class="form-control" value="#1a3a5c" placeholder="#1a3a5c" style="font-family:monospace" oninput="syncColorFromText('header')">
+                </div>
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label">لون نص بيانات الطالب</label>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <input type="color" id="set-text-color" value="#1e293b" style="width:48px;height:40px;border:none;border-radius:8px;cursor:pointer;padding:2px">
+                  <input type="text" id="set-text-color-text" class="form-control" value="#1e293b" placeholder="#1e293b" style="font-family:monospace" oninput="syncColorFromText('text')">
+                </div>
+              </div>
+            </div>
           </div>
+
+          <!-- Section: School Info -->
+          <div style="background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px">
+            <h3 style="margin:0 0 16px;font-size:14px;color:var(--primary);display:flex;align-items:center;gap:8px">🏫 بيانات المدرسة على البطاقة</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+              <div class="form-group" style="margin:0">
+                <label class="form-label">اسم المدرسة على البطاقة</label>
+                <input type="text" class="form-control" id="set-school-name" placeholder="اتركه فارغاً لاستخدام اسم المدرسة الافتراضي">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label">العنوان الفرعي (اختياري)</label>
+                <input type="text" class="form-control" id="set-school-subtitle" placeholder="مثال: نظام الاستدعاء الذكي">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Toggle Fields -->
+          <div style="background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px">
+            <h3 style="margin:0 0 16px;font-size:14px;color:var(--primary);display:flex;align-items:center;gap:8px">🔀 عناصر تظهر على البطاقة المطبوعة</h3>
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:12px 16px;background:white;border:1px solid var(--border);border-radius:10px">
+                <input type="checkbox" id="set-show-rfid" checked style="width:18px;height:18px;accent-color:var(--primary);cursor:pointer">
+                <div>
+                  <div style="font-weight:700;color:var(--text)">🏷️ إظهار رقم RFID UID على البطاقة</div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-top:2px">يُطبع رقم البطاقة الذكية (UID) بالأسفل ليتمكن ولي الأمر من مسحها بسهولة</div>
+                </div>
+              </label>
+              <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:12px 16px;background:white;border:1px solid var(--border);border-radius:10px">
+                <input type="checkbox" id="set-show-student-number" checked style="width:18px;height:18px;accent-color:var(--primary);cursor:pointer">
+                <div>
+                  <div style="font-weight:700;color:var(--text)">🔢 إظهار الرقم الطلابي على البطاقة</div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-top:2px">يُطبع الرقم الطلابي الخاص بالطالب على البطاقة</div>
+                </div>
+              </label>
+              <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:12px 16px;background:white;border:1px solid var(--border);border-radius:10px">
+                <input type="checkbox" id="set-show-qr" checked style="width:18px;height:18px;accent-color:var(--primary);cursor:pointer">
+                <div>
+                  <div style="font-weight:700;color:var(--text)">📱 إظهار رمز QR Code على البطاقة</div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-top:2px">يُطبع رمز QR لمسحه مباشرة بدلاً من بطاقة RFID</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Live Preview -->
+          <div class="preview-area" style="padding:24px;background:linear-gradient(135deg,#f0f4f9,#e8edf5);border-radius:16px;text-align:center;border:1px solid var(--border)">
+            <h3 style="margin-bottom:20px;color:var(--primary);font-size:15px">👀 معاينة مباشرة للبطاقة</h3>
+            <div id="card-preview-container" style="display:flex;justify-content:center"></div>
+            <button class="btn btn-ghost btn-sm" style="margin-top:20px" onclick="updatePreview()">🔄 تحديث المعاينة</button>
+          </div>
+
         </div>
       </div>
     </div>
@@ -573,7 +644,14 @@ let cardSettings = {
     font_size: 11,
     card_width: 3.37,
     card_height: 2.125,
-    barcode_size: 80
+    barcode_size: 80,
+    header_color: '#1a3a5c',
+    text_color: '#1e293b',
+    show_rfid: 1,
+    show_student_number: 1,
+    show_qr: 1,
+    school_name: '',
+    school_subtitle: ''
 };
 const SITE_BASE = window.location.origin;
 const SITE_NAME = '<?= SITE_NAME ?>';
@@ -603,27 +681,61 @@ async function loadInitialData() {
 }
 
 function applySettingsToUI() {
-    document.getElementById('set-font-size').value = cardSettings.font_size;
-    document.getElementById('set-card-width').value = cardSettings.card_width;
-    document.getElementById('set-card-height').value = cardSettings.card_height;
+    document.getElementById('set-font-size').value    = cardSettings.font_size;
+    document.getElementById('set-card-width').value   = cardSettings.card_width;
+    document.getElementById('set-card-height').value  = cardSettings.card_height;
     document.getElementById('set-barcode-size').value = cardSettings.barcode_size;
+    const hc = cardSettings.header_color || '#1a3a5c';
+    const tc = cardSettings.text_color   || '#1e293b';
+    document.getElementById('set-header-color').value      = hc;
+    document.getElementById('set-header-color-text').value = hc;
+    document.getElementById('set-text-color').value        = tc;
+    document.getElementById('set-text-color-text').value   = tc;
+    document.getElementById('set-show-rfid').checked           = !!parseInt(cardSettings.show_rfid ?? 1);
+    document.getElementById('set-show-student-number').checked = !!parseInt(cardSettings.show_student_number ?? 1);
+    document.getElementById('set-show-qr').checked             = !!parseInt(cardSettings.show_qr ?? 1);
+    document.getElementById('set-school-name').value      = cardSettings.school_name || '';
+    document.getElementById('set-school-subtitle').value  = cardSettings.school_subtitle || '';
+    // Sync color picker -> text on change
+    document.getElementById('set-header-color').oninput = function() {
+        document.getElementById('set-header-color-text').value = this.value;
+        updatePreview();
+    };
+    document.getElementById('set-text-color').oninput = function() {
+        document.getElementById('set-text-color-text').value = this.value;
+        updatePreview();
+    };
 }
 
 async function saveCardSettings() {
     const fd = new FormData();
-    fd.append('font_size', document.getElementById('set-font-size').value);
-    fd.append('card_width', document.getElementById('set-card-width').value);
-    fd.append('card_height', document.getElementById('set-card-height').value);
+    fd.append('font_size',    document.getElementById('set-font-size').value);
+    fd.append('card_width',   document.getElementById('set-card-width').value);
+    fd.append('card_height',  document.getElementById('set-card-height').value);
     fd.append('barcode_size', document.getElementById('set-barcode-size').value);
+    fd.append('header_color', document.getElementById('set-header-color').value);
+    fd.append('text_color',   document.getElementById('set-text-color').value);
+    if (document.getElementById('set-show-rfid').checked)           fd.append('show_rfid', '1');
+    if (document.getElementById('set-show-student-number').checked) fd.append('show_student_number', '1');
+    if (document.getElementById('set-show-qr').checked)             fd.append('show_qr', '1');
+    fd.append('school_name',     document.getElementById('set-school-name').value.trim());
+    fd.append('school_subtitle', document.getElementById('set-school-subtitle').value.trim());
     
     const r = await api('update_card_settings', 'POST', fd);
     if (r.success) {
         toast(r.message);
         cardSettings = {
-            font_size: parseInt(document.getElementById('set-font-size').value),
-            card_width: parseFloat(document.getElementById('set-card-width').value),
-            card_height: parseFloat(document.getElementById('set-card-height').value),
-            barcode_size: parseInt(document.getElementById('set-barcode-size').value)
+            font_size:           parseInt(document.getElementById('set-font-size').value),
+            card_width:          parseFloat(document.getElementById('set-card-width').value),
+            card_height:         parseFloat(document.getElementById('set-card-height').value),
+            barcode_size:        parseInt(document.getElementById('set-barcode-size').value),
+            header_color:        document.getElementById('set-header-color').value,
+            text_color:          document.getElementById('set-text-color').value,
+            show_rfid:           document.getElementById('set-show-rfid').checked ? 1 : 0,
+            show_student_number: document.getElementById('set-show-student-number').checked ? 1 : 0,
+            show_qr:             document.getElementById('set-show-qr').checked ? 1 : 0,
+            school_name:         document.getElementById('set-school-name').value.trim(),
+            school_subtitle:     document.getElementById('set-school-subtitle').value.trim()
         };
         updatePreview();
     } else {
@@ -633,24 +745,50 @@ async function saveCardSettings() {
 
 function updatePreview() {
     cardSettings = {
-        font_size: parseInt(document.getElementById('set-font-size').value) || 11,
-        card_width: parseFloat(document.getElementById('set-card-width').value) || 3.37,
-        card_height: parseFloat(document.getElementById('set-card-height').value) || 2.125,
-        barcode_size: parseInt(document.getElementById('set-barcode-size').value) || 80
+        font_size:           parseInt(document.getElementById('set-font-size').value)    || 11,
+        card_width:          parseFloat(document.getElementById('set-card-width').value) || 3.37,
+        card_height:         parseFloat(document.getElementById('set-card-height').value)|| 2.125,
+        barcode_size:        parseInt(document.getElementById('set-barcode-size').value) || 80,
+        header_color:        document.getElementById('set-header-color').value || '#1a3a5c',
+        text_color:          document.getElementById('set-text-color').value   || '#1e293b',
+        show_rfid:           document.getElementById('set-show-rfid').checked           ? 1 : 0,
+        show_student_number: document.getElementById('set-show-student-number').checked ? 1 : 0,
+        show_qr:             document.getElementById('set-show-qr').checked             ? 1 : 0,
+        school_name:         document.getElementById('set-school-name').value.trim(),
+        school_subtitle:     document.getElementById('set-school-subtitle').value.trim()
     };
 
     const container = document.getElementById('card-preview-container');
-    const dummyStudent = { id: 'preview', full_name: 'اسم الطالب التجريبي', class_name: 'الصف التجريبي', barcode: 'test' };
+    const dummyStudent = {
+        id: 'preview',
+        full_name: 'محمد أحمد العتيبي',
+        class_name: '5 / أ',
+        student_number: '47382910',
+        barcode: 'test',
+        rfid_uid: 'A3B4C5D6'
+    };
     container.innerHTML = createCardHTML(dummyStudent);
     
-    const qrBox = document.getElementById('qr-box-preview');
-    if (qrBox) {
-        new QRCode(qrBox, {
-            text: SITE_BASE + '/call.php?code=test',
-            width: cardSettings.barcode_size - 10,
-            height: cardSettings.barcode_size - 10,
-            correctLevel: 1
-        });
+    if (cardSettings.show_qr) {
+        const qrBox = document.getElementById('qr-box-preview');
+        if (qrBox) {
+            new QRCode(qrBox, {
+                text: SITE_BASE + '/call.php?code=test',
+                width: cardSettings.barcode_size - 10,
+                height: cardSettings.barcode_size - 10,
+                correctLevel: 1
+            });
+        }
+    }
+}
+
+function syncColorFromText(type) {
+    const textEl  = document.getElementById('set-' + type + '-color-text');
+    const colorEl = document.getElementById('set-' + type + '-color');
+    const val = textEl.value.trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+        colorEl.value = val;
+        updatePreview();
     }
 }
 
@@ -1189,32 +1327,53 @@ async function deleteUser(id, name) {
 
 function createCardHTML(student) {
     const s = cardSettings;
-    const style = `width:${s.card_width}in; height:${s.card_height}in;`;
-    const bodyStyle = `padding: ${s.card_height * 5}px ${s.card_width * 5}px;`;
-    const fontStyle = `font-size:${s.font_size}pt;`;
-    const qrStyle = `width:${s.barcode_size}px; height:${s.barcode_size}px;`;
+    const hc  = s.header_color || '#1a3a5c';
+    const tc  = s.text_color   || '#1e293b';
+    const sn  = s.school_name  || SITE_NAME;
+    const sub = s.school_subtitle || 'نظام الاستدعاء الذكي';
+    const showRfid  = s.show_rfid == null ? true : !!parseInt(s.show_rfid);
+    const showNum   = s.show_student_number == null ? true : !!parseInt(s.show_student_number);
+    const showQr    = s.show_qr == null ? true : !!parseInt(s.show_qr);
+    const rfidVal   = student.rfid_uid  || '';
+    const numVal    = student.student_number || '—';
+
+    const bodyPadH  = Math.round(s.card_height * 5);
+    const bodyPadW  = Math.round(s.card_width  * 5);
+
+    const rfidRow = (showRfid && rfidVal) ? `
+        <div class="student-field" style="margin-top:4px;padding:3px 6px;background:#f0f7ff;border-radius:5px;display:inline-block">
+            <span class="student-label" style="font-size:${s.font_size - 4}pt;color:#64748b">🏷️ RFID:</span>
+            <span style="font-size:${s.font_size - 2}pt;font-weight:800;color:#0369a1;font-family:monospace;letter-spacing:1px">${rfidVal}</span>
+        </div>` : '';
+
+    const numRow = showNum ? `
+        <div class="student-field">
+            <span class="student-label" style="font-size:${s.font_size - 3}pt;color:#64748b">الرقم الطلابي:</span>
+            <span class="student-value" style="font-size:${s.font_size}pt;color:${tc}">${numVal}</span>
+        </div>` : '';
+
+    const qrBox = showQr ? `
+        <div class="id-card-qr-box" id="qr-box-${student.id}" style="width:${s.barcode_size}px;height:${s.barcode_size}px"></div>` : '';
 
     return `
-        <div class="id-card-wrapper" style="${style}">
-            <div class="id-card-header" style="font-size: ${s.font_size + 2}pt">بطاقة تعريف الطالب</div>
-            <div class="id-card-body" style="${bodyStyle}">
+        <div class="id-card-wrapper" style="width:${s.card_width}in;height:${s.card_height}in">
+            <div class="id-card-header" style="font-size:${s.font_size + 1}pt;background:${hc}">${sn}</div>
+            <div class="id-card-body" style="padding:${bodyPadH}px ${bodyPadW}px">
                 <div class="id-card-info">
                     <div class="student-field">
-                        <span class="student-label" style="font-size: ${s.font_size - 3}pt">اسم الطالب:</span>
-                        <span class="student-value" style="${fontStyle}">${student.full_name}</span>
+                        <span class="student-label" style="font-size:${s.font_size - 3}pt;color:#64748b">اسم الطالب:</span>
+                        <span class="student-value" style="font-size:${s.font_size + 1}pt;color:${tc}">${student.full_name}</span>
                     </div>
                     <div class="student-field">
-                        <span class="student-label" style="font-size: ${s.font_size - 3}pt">الصف:</span>
-                        <span class="student-value" style="${fontStyle}">${student.class_name}</span>
+                        <span class="student-label" style="font-size:${s.font_size - 3}pt;color:#64748b">الصف:</span>
+                        <span class="student-value" style="font-size:${s.font_size}pt;color:${tc}">${student.class_name}</span>
                     </div>
-                    <div class="student-field">
-                        <span class="student-label" style="font-size: ${s.font_size - 3}pt">رقم الطالب:</span>
-                        <span class="student-value" style="${fontStyle}">${student.student_number || '—'}</span>
-                    </div>
+                    ${numRow}
+                    ${rfidRow}
                 </div>
-                <div class="id-card-qr-box" id="qr-box-${student.id}" style="${qrStyle}"></div>
+                ${qrBox}
             </div>
-            <div class="id-card-footer" style="font-size: ${s.font_size - 3}pt">${SITE_NAME} - الاستدعاء الذكي</div>
+            <div class="id-card-footer" style="font-size:${s.font_size - 3}pt;background:${hc}">${sub}</div>
         </div>`;
 }
 
@@ -1245,6 +1404,11 @@ function openPrintWindow(students) {
     }
     const currentStyles = Array.from(document.querySelectorAll('style')).map(s => s.innerHTML).join('\n');
     
+    const showQr = cardSettings.show_qr == null ? true : !!parseInt(cardSettings.show_qr);
+    const qrInitScript = showQr ? 
+        'students.forEach(s => { const el = document.getElementById("qr-box-" + s.id); if(el) new QRCode(el, {text:"' + SITE_BASE + '/call.php?code=" + s.barcode, width:' + (cardSettings.barcode_size - 8) + ', height:' + (cardSettings.barcode_size - 8) + ', correctLevel:1}); });'
+        : '';
+
     printWindow.document.write('<html><head><title>Print</title><style>' + currentStyles + 
         'body{background:white;padding:10mm;margin:0;direction:rtl;}' +
         '.bulk-print-table{width:100%;border-collapse:separate;border-spacing:10mm;table-layout:fixed;}' +
@@ -1258,10 +1422,7 @@ function openPrintWindow(students) {
         '<script>' +
         'function startPrint(){' +
         '  const students = ' + JSON.stringify(students) + ';' +
-        '  students.forEach(s => {' +
-        '    const el = document.getElementById("qr-box-" + s.id);' +
-        '    if(el) new QRCode(el, {text:"' + SITE_BASE + '/call.php?code=" + s.barcode, width:' + (cardSettings.barcode_size - 8) + ', height:' + (cardSettings.barcode_size - 8) + ', correctLevel:1});' +
-        '  });' +
+        '  ' + qrInitScript +
         '  setTimeout(() => { window.print(); }, 800);' +
         '}' +
         'window.onload = () => { if(typeof QRCode === "undefined"){ document.querySelectorAll("script").forEach(s => { if(s.src.includes("qrcode")) s.onload = startPrint; }); } else { startPrint(); } };' +
