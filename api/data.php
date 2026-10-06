@@ -585,7 +585,7 @@ if ($action === 'get_card_settings') {
         $cols = ['header_color VARCHAR(20) DEFAULT \'#1a3a5c\'', 'text_color VARCHAR(20) DEFAULT \'#1e293b\'',
                  'show_rfid TINYINT(1) DEFAULT 1', 'show_student_number TINYINT(1) DEFAULT 1',
                  'show_qr TINYINT(1) DEFAULT 1', 'school_name VARCHAR(200) DEFAULT \'\'',
-                 'school_subtitle VARCHAR(200) DEFAULT \'\''];
+                 'school_subtitle VARCHAR(200) DEFAULT \'\'', 'print_mode VARCHAR(20) DEFAULT \'card\''];
         foreach ($cols as $col) {
             $colName = explode(' ', $col)[0];
             try { $db->exec("ALTER TABLE card_settings ADD COLUMN $col"); } catch (PDOException $e) { /* already exists */ }
@@ -601,7 +601,7 @@ if ($action === 'get_card_settings') {
         $settings = ['font_size'=>11,'card_width'=>3.37,'card_height'=>2.125,'barcode_size'=>80,
                      'header_color'=>'#1a3a5c','text_color'=>'#1e293b',
                      'show_rfid'=>1,'show_student_number'=>1,'show_qr'=>1,
-                     'school_name'=>'','school_subtitle'=>''];
+                     'school_name'=>'','school_subtitle'=>'','print_mode'=>'card'];
     }
     // Fill defaults for missing keys
     $settings['header_color'] = $settings['header_color'] ?? '#1a3a5c';
@@ -611,6 +611,7 @@ if ($action === 'get_card_settings') {
     $settings['show_qr']      = isset($settings['show_qr'])      ? (int)$settings['show_qr']      : 1;
     $settings['school_name']  = $settings['school_name']  ?? '';
     $settings['school_subtitle'] = $settings['school_subtitle'] ?? '';
+    $settings['print_mode']   = $settings['print_mode']   ?? 'card';
     
     jsonResponse(true, '', $settings);
 }
@@ -629,19 +630,20 @@ if ($action === 'update_card_settings') {
     $showQr         = isset($_POST['show_qr']) ? 1 : 0;
     $schoolName     = trim($_POST['school_name'] ?? '');
     $schoolSubtitle = trim($_POST['school_subtitle'] ?? '');
+    $printMode      = in_array($_POST['print_mode'] ?? 'card', ['card', 'sheet']) ? $_POST['print_mode'] : 'card';
     
     $stmt = $db->prepare("
         UPDATE card_settings 
         SET font_size=?, card_width=?, card_height=?, barcode_size=?,
             header_color=?, text_color=?,
             show_rfid=?, show_student_number=?, show_qr=?,
-            school_name=?, school_subtitle=?
+            school_name=?, school_subtitle=?, print_mode=?
         WHERE id = 1
     ");
     $stmt->execute([$fontSize, $cardWidth, $cardHeight, $barcodeSize,
                     $headerColor, $textColor,
                     $showRfid, $showStudentNum, $showQr,
-                    $schoolName, $schoolSubtitle]);
+                    $schoolName, $schoolSubtitle, $printMode]);
     
     jsonResponse(true, 'تم حفظ إعدادات البطاقة بنجاح ✅');
 }

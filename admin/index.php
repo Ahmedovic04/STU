@@ -320,6 +320,37 @@ include '../includes/header.php';
             </div>
           </div>
 
+          <!-- Section: Print Mode & Card Printers -->
+          <div style="background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px">
+            <h3 style="margin:0 0 16px;font-size:14px;color:var(--primary);display:flex;align-items:center;gap:8px">🖨️ نمط الطباعة الافتراضي (طابعات البطاقات / ورق A4)</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:16px;margin-bottom:16px">
+              <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;padding:14px;background:white;border:2px solid var(--border);border-radius:10px">
+                <input type="radio" name="print_mode_radio" id="set-print-mode-card" value="card" checked style="margin-top:4px" onchange="updatePreview()">
+                <div>
+                  <div style="font-weight:700;color:var(--text)">💳 طابعة كروت مخصصة (Zebra / Evolis / Fargo)</div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-top:3px">مقاس بطاقة مفردة CR-80 (3.37" × 2.125") بدون هوامش، جاهزة للطباعة مباشرة على البطاقات البلاستيكية الذكية RFID.</div>
+                </div>
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;padding:14px;background:white;border:2px solid var(--border);border-radius:10px">
+                <input type="radio" name="print_mode_radio" id="set-print-mode-sheet" value="sheet" style="margin-top:4px" onchange="updatePreview()">
+                <div>
+                  <div style="font-weight:700;color:var(--text)">📄 طابعة ورق عادية (ورق A4)</div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-top:3px">تجميع 6 بطاقات في صفحة A4 واحدة مناسبة للطباعة على ورق مقوى أو التغليف الحراري والقص.</div>
+                </div>
+              </label>
+            </div>
+
+            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;font-size:13px;color:#1e40af;line-height:1.6">
+              <strong>💡 إرشادات مهمة للطباعة المباشرة على طابعة البطاقات (Zebra / Evolis / Magicard):</strong>
+              <ul style="margin:6px 0 0;padding-right:20px;list-style-type:disc">
+                <li>في نافذة الطباعة الخاصة بالمتصفح، اختر طابعة البطاقات (مثال: <b>Zebra ZC100 / ZXP Series</b> أو <b>Evolis</b>).</li>
+                <li>اضبط <b>الهوامش (Margins)</b> على: <b>بلا / None (0)</b> لتفادي أي إزاحة في طباعة البطاقة.</li>
+                <li>تأكد من تفعيل خيار <b>رسومات الخلفية (Background graphics)</b> لطباعة ألوان الترويسة والتصميم بكامل الجودة.</li>
+                <li>اختر مقاس الورق في إعدادات الطابعة: <b>CR-80</b> أو <b>Card</b> أو <b>Custom: 85.6 × 54 mm</b>.</li>
+              </ul>
+            </div>
+          </div>
+
           <!-- Live Preview -->
           <div class="preview-area" style="padding:24px;background:linear-gradient(135deg,#f0f4f9,#e8edf5);border-radius:16px;text-align:center;border:1px solid var(--border)">
             <h3 style="margin-bottom:20px;color:var(--primary);font-size:15px">👀 معاينة مباشرة للبطاقة</h3>
@@ -696,6 +727,12 @@ function applySettingsToUI() {
     document.getElementById('set-show-qr').checked             = !!parseInt(cardSettings.show_qr ?? 1);
     document.getElementById('set-school-name').value      = cardSettings.school_name || '';
     document.getElementById('set-school-subtitle').value  = cardSettings.school_subtitle || '';
+    
+    const pMode = cardSettings.print_mode || 'card';
+    if (document.getElementById('set-print-mode-' + pMode)) {
+        document.getElementById('set-print-mode-' + pMode).checked = true;
+    }
+
     // Sync color picker -> text on change
     document.getElementById('set-header-color').oninput = function() {
         document.getElementById('set-header-color-text').value = this.value;
@@ -720,6 +757,8 @@ async function saveCardSettings() {
     if (document.getElementById('set-show-qr').checked)             fd.append('show_qr', '1');
     fd.append('school_name',     document.getElementById('set-school-name').value.trim());
     fd.append('school_subtitle', document.getElementById('set-school-subtitle').value.trim());
+    const selMode = document.querySelector('input[name="print_mode_radio"]:checked')?.value || 'card';
+    fd.append('print_mode', selMode);
     
     const r = await api('update_card_settings', 'POST', fd);
     if (r.success) {
@@ -735,7 +774,8 @@ async function saveCardSettings() {
             show_student_number: document.getElementById('set-show-student-number').checked ? 1 : 0,
             show_qr:             document.getElementById('set-show-qr').checked ? 1 : 0,
             school_name:         document.getElementById('set-school-name').value.trim(),
-            school_subtitle:     document.getElementById('set-school-subtitle').value.trim()
+            school_subtitle:     document.getElementById('set-school-subtitle').value.trim(),
+            print_mode:          selMode
         };
         updatePreview();
     } else {
@@ -744,6 +784,7 @@ async function saveCardSettings() {
 }
 
 function updatePreview() {
+    const selMode = document.querySelector('input[name="print_mode_radio"]:checked')?.value || 'card';
     cardSettings = {
         font_size:           parseInt(document.getElementById('set-font-size').value)    || 11,
         card_width:          parseFloat(document.getElementById('set-card-width').value) || 3.37,
@@ -755,7 +796,8 @@ function updatePreview() {
         show_student_number: document.getElementById('set-show-student-number').checked ? 1 : 0,
         show_qr:             document.getElementById('set-show-qr').checked             ? 1 : 0,
         school_name:         document.getElementById('set-school-name').value.trim(),
-        school_subtitle:     document.getElementById('set-school-subtitle').value.trim()
+        school_subtitle:     document.getElementById('set-school-subtitle').value.trim(),
+        print_mode:          selMode
     };
 
     const container = document.getElementById('card-preview-container');
@@ -1379,54 +1421,119 @@ function createCardHTML(student) {
 
 async function printSingleCard(studentId) {
     const student = allStudents.find(s => s.id == studentId);
-    if (student) openPrintWindow([student]);
+    if (student) openPrintWindow([student], 'card');
 }
 
 async function printBulk(mode) {
     const classId = document.getElementById('filterClass').value;
     const students = mode === 'class' ? allStudents.filter(s => s.class_id == classId) : allStudents;
     if (students.length === 0) { toast('لا يوجد طلاب لطباعتهم', 'error'); return; }
-    openPrintWindow(students);
+    const defaultMode = cardSettings.print_mode || 'card';
+    openPrintWindow(students, defaultMode);
 }
 
-function openPrintWindow(students) {
+function openPrintWindow(students, initialMode) {
+    initialMode = initialMode || cardSettings.print_mode || (students.length === 1 ? 'card' : 'card');
     const printWindow = window.open('', '_blank');
-    if (!printWindow) { alert('يرجى السماح بالنوافذ المنبثقة'); return; }
-    let contentHtml = '';
+    if (!printWindow) { alert('يرجى السماح بالنوافذ المنبثقة للطباعة'); return; }
+
+    const s = cardSettings;
+    const cw = s.card_width || 3.37;
+    const ch = s.card_height || 2.125;
+    const showQr = s.show_qr == null ? true : !!parseInt(s.show_qr);
+
+    // Build Card Mode HTML (Single/Multi CR80 Pages)
+    let cardPagesHtml = '';
+    students.forEach(st => {
+        cardPagesHtml += '<div class="card-print-page">' + createCardHTML(st) + '</div>';
+    });
+
+    // Build Sheet Mode HTML (A4 6 cards per page)
+    let sheetPagesHtml = '';
     for (let i = 0; i < students.length; i += 6) {
         const chunk = students.slice(i, i + 6);
-        contentHtml += '<table class="bulk-print-table">';
+        sheetPagesHtml += '<table class="bulk-print-table">';
         for (let j = 0; j < chunk.length; j += 2) {
-            contentHtml += '<tr><td>' + (chunk[j] ? createCardHTML(chunk[j]) : '') + '</td><td>' + (chunk[j+1] ? createCardHTML(chunk[j+1]) : '') + '</td></tr>';
+            sheetPagesHtml += '<tr><td>' + (chunk[j] ? createCardHTML(chunk[j]) : '') + '</td><td>' + (chunk[j+1] ? createCardHTML(chunk[j+1]) : '') + '</td></tr>';
         }
-        contentHtml += '</table>';
-        if (i + 6 < students.length) contentHtml += '<div class="page-break"></div>';
+        sheetPagesHtml += '</table>';
+        if (i + 6 < students.length) sheetPagesHtml += '<div class="page-break"></div>';
     }
-    const currentStyles = Array.from(document.querySelectorAll('style')).map(s => s.innerHTML).join('\n');
-    
-    const showQr = cardSettings.show_qr == null ? true : !!parseInt(cardSettings.show_qr);
-    const qrInitScript = showQr ? 
-        'students.forEach(s => { const el = document.getElementById("qr-box-" + s.id); if(el) new QRCode(el, {text:"' + SITE_BASE + '/call.php?code=" + s.barcode, width:' + (cardSettings.barcode_size - 8) + ', height:' + (cardSettings.barcode_size - 8) + ', correctLevel:1}); });'
+
+    const currentStyles = Array.from(document.querySelectorAll('style')).map(st => st.innerHTML).join('\n');
+
+    const qrInitCode = showQr ? 
+        'students.forEach(s => { const el = document.getElementById("qr-box-" + s.id); if(el && !el.children.length) new QRCode(el, {text:"' + SITE_BASE + '/call.php?code=" + s.barcode, width:' + (s.barcode_size - 8) + ', height:' + (s.barcode_size - 8) + ', correctLevel:1}); });'
         : '';
 
-    printWindow.document.write('<html><head><title>Print</title><style>' + currentStyles + 
-        'body{background:white;padding:10mm;margin:0;direction:rtl;}' +
-        '.bulk-print-table{width:100%;border-collapse:separate;border-spacing:10mm;table-layout:fixed;}' +
-        '.bulk-print-table td{vertical-align:top;width:50%;padding:0;}' +
-        '.id-card-wrapper{margin:0 auto;box-shadow:none;border:1px solid #eee;}' +
-        '.page-break{page-break-after:always;height:1px;}' +
-        '@media print{@page{size:A4 portrait;margin:0;}body{padding:10mm;}.id-card-wrapper{border:1px solid #ddd;-webkit-print-color-adjust:exact;}}' +
-        '</style></head><body>' +
-        '<div id="print-content">' + contentHtml + '</div>' +
+    const html = '<!DOCTYPE html>' +
+        '<html lang="ar" dir="rtl"><head><meta charset="UTF-8">' +
+        '<title>طباعة البطاقات الذكية</title>' +
+        '<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">' +
+        '<style>' + currentStyles +
+        '* { box-sizing: border-box; }' +
+        'body { margin: 0; padding: 0; font-family: "Tajawal", Tahoma, sans-serif; direction: rtl; background: #f1f5f9; }' +
+        '.print-toolbar { background: #1e293b; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; gap: 15px; position: sticky; top: 0; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }' +
+        '.toolbar-group { display: flex; align-items: center; gap: 10px; }' +
+        '.btn-tb { border: none; padding: 8px 16px; border-radius: 6px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }' +
+        '.btn-tb-primary { background: #2563eb; color: white; }' +
+        '.btn-tb-primary:hover { background: #1d4ed8; }' +
+        '.btn-tb-mode { background: #334155; color: #e2e8f0; }' +
+        '.btn-tb-mode.active { background: #059669; color: white; }' +
+        '.tb-tip { background: #0f172a; border-bottom: 1px solid #334155; padding: 10px 20px; font-size: 12px; color: #94a3b8; line-height: 1.6; }' +
+        '.tb-tip b { color: #38bdf8; }' +
+        'body.mode-card .view-sheet { display: none !important; }' +
+        'body.mode-card .view-card { display: block; padding: 20px; }' +
+        'body.mode-card .card-print-page { width: ' + cw + 'in; height: ' + ch + 'in; margin: 15px auto; box-shadow: 0 4px 14px rgba(0,0,0,0.12); background: white; border-radius: 8px; overflow: hidden; }' +
+        'body.mode-sheet .view-card { display: none !important; }' +
+        'body.mode-sheet .view-sheet { display: block; padding: 20px; }' +
+        'body.mode-sheet .bulk-print-table { width: 100%; max-width: 210mm; margin: 0 auto 20px; border-collapse: separate; border-spacing: 8mm; background: white; padding: 10mm; box-shadow: 0 4px 14px rgba(0,0,0,0.1); border-radius: 8px; }' +
+        'body.mode-sheet .bulk-print-table td { vertical-align: top; width: 50%; padding: 0; }' +
+        'body.mode-sheet .id-card-wrapper { margin: 0 auto; box-shadow: none; border: 1px solid #e2e8f0; }' +
+        'body.mode-sheet .page-break { page-break-after: always; height: 1px; }' +
+        '@media print {' +
+        '  .no-print { display: none !important; }' +
+        '  body.mode-card { background: white !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }' +
+        '  @page { margin: 0 !important; }' +
+        '  body.mode-card .view-card { padding: 0 !important; }' +
+        '  body.mode-card .card-print-page { width: ' + cw + 'in !important; height: ' + ch + 'in !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; border-radius: 0 !important; border: none !important; page-break-after: always !important; break-after: page !important; page-break-inside: avoid !important; break-inside: avoid !important; display: flex !important; }' +
+        '  body.mode-card .card-print-page:last-child { page-break-after: avoid !important; break-after: avoid !important; }' +
+        '  body.mode-card .id-card-wrapper { width: 100% !important; height: 100% !important; border: none !important; border-radius: 0 !important; box-shadow: none !important; margin: 0 !important; }' +
+        '  body.mode-sheet { background: white !important; padding: 0 !important; margin: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }' +
+        '  body.mode-sheet .view-sheet { padding: 0 !important; }' +
+        '  body.mode-sheet .bulk-print-table { box-shadow: none !important; padding: 0 !important; margin: 0 auto !important; }' +
+        '  body.mode-sheet .id-card-wrapper { border: 1px solid #cbd5e1 !important; box-shadow: none !important; }' +
+        '}' +
+        '</style></head>' +
+        '<body class="mode-' + initialMode + '">' +
+        '<div class="print-toolbar no-print">' +
+        '  <div class="toolbar-group">' +
+        '    <button class="btn-tb btn-tb-primary" onclick="window.print()">🖨️ طباعة الآن (Print)</button>' +
+        '    <button class="btn-tb btn-tb-mode ' + (initialMode === 'card' ? 'active' : '') + '" id="btnModeCard" onclick="switchMode(\'card\')">💳 طابعة كروت (CR80 / Zebra)</button>' +
+        '    <button class="btn-tb btn-tb-mode ' + (initialMode === 'sheet' ? 'active' : '') + '" id="btnModeSheet" onclick="switchMode(\'sheet\')">📄 ورق عادي (A4 - 6 بطاقات)</button>' +
+        '  </div>' +
+        '  <div style="font-size:13px;color:#cbd5e1">عدد البطاقات: <b>' + students.length + '</b></div>' +
+        '</div>' +
+        '<div class="tb-tip no-print">' +
+        '  💡 <b>إرشادات الطباعة على طابعة البطاقات (Zebra / Evolis):</b> اختر طابعتك، واجعل الهوامش <b>(Margins: None / 0)</b> وتأكد من تفعيل <b>(Background graphics / رسومات الخلفية)</b> لتُطبع البطاقة بمقاس CR-80 مباشرة.' +
+        '</div>' +
+        '<div class="view-card">' + cardPagesHtml + '</div>' +
+        '<div class="view-sheet">' + sheetPagesHtml + '</div>' +
         '<script src="' + SITE_BASE + '/assets/js/qrcode.min.js"><\/script>' +
         '<script>' +
-        'function startPrint(){' +
-        '  const students = ' + JSON.stringify(students) + ';' +
-        '  ' + qrInitScript +
-        '  setTimeout(() => { window.print(); }, 800);' +
+        'const students = ' + JSON.stringify(students) + ';' +
+        'function switchMode(m) {' +
+        '  document.body.className = "mode-" + m;' +
+        '  document.getElementById("btnModeCard").classList.toggle("active", m === "card");' +
+        '  document.getElementById("btnModeSheet").classList.toggle("active", m === "sheet");' +
         '}' +
-        'window.onload = () => { if(typeof QRCode === "undefined"){ document.querySelectorAll("script").forEach(s => { if(s.src.includes("qrcode")) s.onload = startPrint; }); } else { startPrint(); } };' +
-        '<\/script></body></html>');
+        'function initQRCodes() { ' + qrInitCode + ' }' +
+        'window.onload = () => {' +
+        '  if(typeof QRCode === "undefined"){ document.querySelectorAll("script").forEach(s => { if(s.src.includes("qrcode")) s.onload = () => { initQRCodes(); setTimeout(() => window.print(), 800); }; }); } else { initQRCodes(); setTimeout(() => window.print(), 800); }' +
+        '};' +
+        '<\/script></body></html>';
+
+    printWindow.document.write(html);
     printWindow.document.close();
 }
 
